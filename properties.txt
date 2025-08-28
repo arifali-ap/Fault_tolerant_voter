@@ -1,0 +1,69 @@
+
+ 
+(* Properties for voter_state *)
+
+(*
+   1.✓  Output unit_id is present in the u_data_lst ( Defined in voter_state itself: pf_v_output)
+   
+   2.✓  Output is  an healthy (signal good, non-miscomparing non-isolated) value. (not necessarly from the same cycle)
+        ( Defined in voter_state itself : pf_presrvd_data  )
+        
+   3.✓  Voter validity= valid => Current output unit is not isolated. (defined in voter_state itself : pf_out_not_isolated )
+        (may be its current value cannot be used as voter_output due to bad signal or miscomparing value, however it should not be isolated. 
+        Once isolated we should switch the prime unit ).  
+        
+   4.✓  Always update the voter state u_data_lst with the given input unit signals. ( Part of voter_state_transition_prop )
+   
+   5.✓  Output_age is either set to zero or incrmented by one after one voter_state_transition, 
+        if the voter_validity is either valid or un_id. (Part of voter_state_transition_prop)
+   
+   6.✓  let new_vs = voter_state_transition (old_vs), If output unit of old_vs is not isolated in new_vs, then output unit  of new_vs = output unit of old_vs
+         ( Part of voter_state_transition_prop)
+
+   7. ✓ output_age <> 0 -> previous output is equal to current output (voter_state_transition_prop)
+
+   8. ✓ forall x, In x u_data_lst, risky_count x = 0 <-> healthy_data x (included in unit_data itself )
+  
+   9. ✓  forall x, In x u_data_lst of new_vs, ~ healthy_data x -> risky_count x = S (error count of corresponding unit in vs). (voter_state_transition prop )
+
+   10.✓ always risky_count <= persistence_lmt (Included in unit_status record itself)
+   
+   11.✓ forall unit_data x,  risky_count x = persistence_lmt <-> x is isolated. (Included in the unit_status record itself) 
+
+   12.✓  Voter_validity= valid ->   Output_age is equal to risky_count of prime unit. (included in voter_state itself)
+
+   13.✓ Every voter_state have the following validity based properties ( Included in voter_state itself)
+         
+        a) If there are no enough non-isolated units the validity will be not_valid and vice versa
+   	b) If there are enough (at least min_required) non-isolated units but the prime unit is isolated and 
+      		in the current cycle there are no other healthy units to choose as the master unit, 
+      		the voter_validity will be un_id. Which means we are waiting for some more cycles to get
+      		an healthy unit to act as prime unit.
+      		In this case the voter_output will be the last healthy value of the recently isolated prime unit.
+   	c) If there are enough non_isolated units and there is atleast one healthy unit, then the validity will always be valid
+          
+   14.✓ Once isolated unit will remain isolated for the remaining cycles. (voter_state_transition_prop)
+   
+   15.✓ output_age = 0 <-> (voter_validity = valid /\ voter_output is from the current cycle values); 
+        ( defined in voter_state record : pf_cary_fwd_data and pf_age )
+        
+   16.  (Soundness a) If the miscomparison_status of a unit is miscomparing, its measurement
+ 	deviates more than δ from the (unknown) ground truth. (voter_state_transition_prop)
+ 	
+   17.  (Soundness b) If the miscomparison_status of a unit is not_miscomparing, then the
+	deviation of the measurement of that unit from the ground truth is at most 3δ. (voter_state_transition_prop)
+	
+   18.  (Completeness a) If the measurement of a unit deviates more than 3δ from the ground
+	truth, then its miscomparison_status should be miscomparing. (voter_state_transition_prop)
+	
+   19.  (Completeness b) If the deviation of the measurement of a unit from the ground truth is
+	at most δ, its miscomparison_status should be not_miscomparing. (voter_state_transition_prop)
+       
+   20.  Voter Once invalid remains in invalid state    (voter_state_transition_prop). 
+   
+   21.  Voter will not stay in Un_id state for more than persistence_lmt cycles. (By pf_age_validity and property #5 )
+   
+   22.  Prime unit should not switch frequently, should wait at least persistence_lmt-1 cycles ( By lemma : prime_unit_does_not_switch_frequently )
+                         
+ 
+          
