@@ -1,3 +1,8 @@
+(* Author : Sandra S 
+ *          Visiting Student, IIT Palakkad *)
+
+(* This file contains a test input for the transition function execution of a single cycle *)
+
 open Voter_state_transition
 (*function to convert int to nat*)
 let rec  int_to_nat n =
