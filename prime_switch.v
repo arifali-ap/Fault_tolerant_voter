@@ -1,20 +1,20 @@
-Require Import  Nat.     
-Require Import Bool.    
-Require Import List. 
+From Stdlib Require Import  Nat.     
+From Stdlib Require Import Bool.    
+From Stdlib Require Import List. 
 Import ListNotations.
-Require Import Lia.
+From Stdlib Require Import Lia.
 Import Arith.
-Require Import Coq.Logic.Eqdep_dec.
+From Stdlib Require Import Logic.Eqdep_dec.
 Require Import BTProject.config.
 Require Import BTProject.voter_state.
-Require Import BTProject.library_using_list.
+Require Import BTProject.library.
 Require Import BTProject.gen_lemmas.
 
-Require Import Coq.Arith.PeanoNat.
-Require Import Coq.Logic.Decidable.
-Require Import Coq.Logic.Decidable.
-Require Import Coq.Classes.DecidableClass.
-Require Import Coq.Program.Equality.
+From Stdlib Require Import Arith.PeanoNat.
+From Stdlib Require Import Logic.Decidable.
+From Stdlib Require Import Logic.Decidable.
+From Stdlib Require Import Classes.DecidableClass.
+From Stdlib Require Import Program.Equality.
 
 Lemma healthy_list_contains_only_healthy_units (ud_lst: list unit_data) : forall x, In x (healthy_unit_list ud_lst) <-> ( healthy_data x /\ In x ud_lst).
   
@@ -97,13 +97,17 @@ Definition build_prime_switched_vs
     unfold isolated_list in H2In.
     apply filter_In in H2In.
     inversion H2In as [H2xIn H2xIso].
-    pose proof (same_u_id_means_same_data H2uid H2xIn OHCin pf_new_p_ud_lst).
+    assert (NoDup (get_u_ids_of_unit_data new_p_ud_lst) ) as Hnd. {
+         rewrite pf_new_p_ud_lst; exact  (pf_l u_ids).
+    }
+       
+    pose proof (fun_out_same_means_same_element_of_lst
+                   H2x H2uid H2xIn OHCin Hnd).
     rewrite H3 in H2xIso.
     unfold healthy_data in OHchd. inversion OHchd as [hl1 [hl2 hl3]].
     unfold not_iso_check in H2xIso.
     rewrite hl2 in H2xIso.
     inversion H2xIso.
-    exact ( pf_l u_ids).
     trivial.
     inversion H.
     intro; inversion H.
@@ -159,7 +163,10 @@ Definition build_prime_switched_vs
       inversion H3.
       trivial.
     }
-    pose proof (same_u_id_means_same_data H0 H3 H2 pf_new_p_ud_lst ).
+    assert (NoDup (get_u_ids_of_unit_data new_p_ud_lst) ) as Hnd. {
+         rewrite pf_new_p_ud_lst; exact  (pf_l u_ids).
+    }
+    pose proof (fun_out_same_means_same_element_of_lst x H0 H3 H2 Hnd ).
     inversion H1 as [H5 H6]. 
     assert ( healthy_data x).
     { assert ( In x (healthy_unit_list new_p_ud_lst) ) as H7.
@@ -173,9 +180,6 @@ Definition build_prime_switched_vs
     rewrite H4 in H6.
     symmetry.
     exact (H6 H7).
-    exact (pf_l u_ids).
-    
-    exact (pf_l u_ids).
   - intros.
     unfold persistence_lmt.
     lia.

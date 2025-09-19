@@ -1,21 +1,21 @@
-Require Import  Nat.     
-Require Import Bool.    
-Require Import List. 
+From Stdlib Require Import  Nat.     
+From Stdlib Require Import Bool.    
+From Stdlib Require Import List. 
 Import ListNotations.
-Require Import Lia. 
+From Stdlib Require Import Lia. 
 Import Arith.
-Require Import Coq.Logic.Eqdep_dec.
-Require Import Coq.Arith.PeanoNat.
-Require Import Coq.Logic.Decidable.
-Require Import Coq.Logic.Decidable.
-Require Import Coq.Classes.DecidableClass.
-Require Import Coq.Program.Equality.
-Require Import Classical.
-Require Import Coq.Logic.Classical_Prop.
+From Stdlib Require Import Logic.Eqdep_dec.
+From Stdlib Require Import Arith.PeanoNat.
+From Stdlib Require Import Logic.Decidable.
+From Stdlib Require Import Logic.Decidable.
+From Stdlib Require Import Classes.DecidableClass.
+From Stdlib Require Import Program.Equality.
+From Stdlib Require Import Classical.
+From Stdlib Require Import Logic.Classical_Prop.
 
 Require Import BTProject.config.
 Require Import BTProject.voter_state.
-Require Import BTProject.library_using_list.
+Require Import BTProject.library.
 Require Import BTProject.gen_lemmas.
 Require Import BTProject.build_updated_u_data_lst.
 Require Import BTProject.prime_switch.
@@ -42,7 +42,12 @@ Lemma pf_age_satisfied_bad_case
         assert ( uid (voter_output vs) = get_u_id_of_unit_data (presrvd_data vs) ).
         { unfold get_u_id_of_unit_data. rewrite H5a. trivial. }
         rewrite H3 in H6.
-        pose proof (same_u_id_means_same_data H6 H4 H1 pf_lsd (pf_l u_ids)  ). 
+        assert (NoDup (get_u_ids_of_unit_data lsd) ) as Hnd. {
+          rewrite pf_lsd; exact  (pf_l u_ids).
+        }
+ 
+        pose proof (fun_out_same_means_same_element_of_lst
+                      (proj1_sig f) H6 H4 H1 Hnd  ). 
         rewrite <- H7 in H5b.
         rewrite H5b in pf_h.
         inversion pf_h.
@@ -65,7 +70,10 @@ Lemma pf_age_satisfied_mis_case
         pose proof (pf_presrvd_data vs). inversion H5 as [H5a [H5b [H5c H5d]]].
         assert ( uid (voter_output vs) = get_u_id_of_unit_data (presrvd_data vs) ). { unfold get_u_id_of_unit_data. rewrite H5a. trivial. }
         rewrite H3 in H6.
-        pose proof (same_u_id_means_same_data H6 H4 H1 pf_lsd (pf_l u_ids)  ). 
+        assert (NoDup (get_u_ids_of_unit_data lsd) ) as Hnd. {
+          rewrite pf_lsd; exact  (pf_l u_ids).
+        }
+        pose proof (fun_out_same_means_same_element_of_lst (proj1_sig f) H6 H4 H1 Hnd). 
         rewrite <- H7 in H5d.
         rewrite H5d in pf_m.
         contradiction.
@@ -140,9 +148,14 @@ Proof.
     apply filter_In in Hy1in, Hyiniso.
     inversion Hy1in as [Hy1inpq Hy1iso].
     inversion Hyiniso as [Hyinpq Hyiso].
+    
+    assert (NoDup (get_u_ids_of_unit_data (u_data_lst vs)) ) as Hnd. {
+      rewrite (pf_ud_lst vs); exact  (pf_l u_ids).
+    }
+    
     assert(y1 = y) as Hy1eqy
-        by exact (same_u_id_means_same_data Hy1uid Hy1inpq Hyinpq
-                    (pf_ud_lst vs) (pf_l u_ids)).
+        by exact (fun_out_same_means_same_element_of_lst y1 Hy1uid Hy1inpq Hyinpq
+                    Hnd).
     rewrite Hy1eqy in Hy1iso.
     rewrite Hy1iso in Hyiso.
     inversion Hyiso.
@@ -198,9 +211,13 @@ Proof.
   inversion Hnisovs as [y1 [Hy1uid Hy1inniso]].
   apply filter_In in Hy1inniso.
   inversion Hy1inniso as [Hy1in Hy1iso].
+  assert (NoDup (get_u_ids_of_unit_data (u_data_lst vs)) ) as Hnd. {
+    rewrite (pf_ud_lst vs); exact  (pf_l u_ids).
+  }
+  
   assert (y1 = proj1_sig VSout) as Heqy1vsout
-      by exact (same_u_id_means_same_data
-                  Hy1uid Hy1in Hvsoutin (pf_ud_lst vs) (pf_l u_ids)).
+      by exact (fun_out_same_means_same_element_of_lst
+                  y1 Hy1uid Hy1in Hvsoutin Hnd).
   rewrite <- Heqy1vsout.
   exact (nisoc_t_not_isltd Hy1iso).
 Qed.
@@ -1403,15 +1420,18 @@ Unshelve.
     rewrite H0 in Hcb.
     unfold new_p_ud_lst in H1.
     unfold isolated_list in Hcc. apply filter_In in Hcc. inversion Hcc.
+    assert (NoDup (get_u_ids_of_unit_data new_p_ud_lst) ) as Hnd. {
+      unfold new_p_ud_lst.
+      rewrite pf_new_p_ud_lst; exact  (pf_l u_ids).
+    }
     
-    pose proof (same_u_id_means_same_data Hcb H2 H1 pf_new_p_ud_lst).
+    pose proof (fun_out_same_means_same_element_of_lst Hca Hcb H2 H1 Hnd).
     unfold negb in H3.
     unfold not_iso_check in H3. 
     unfold c_s in hyp.
     rewrite H4 in H3.
     pose proof (Helper_lemma_to_reduce_match_term H3 hyp ).
     inversion H5.
-        exact (pf_l u_ids).
  -- trivial.
  -- inversion H.
  -- intro. inversion H.
@@ -1535,15 +1555,18 @@ Unshelve.
     rewrite H0 in Hcb.
     unfold new_p_ud_lst in H1.
     unfold isolated_list in Hcc. apply filter_In in Hcc. inversion Hcc.
+    assert (NoDup (get_u_ids_of_unit_data new_p_ud_lst) ) as Hnd. {
+      unfold new_p_ud_lst.
+      rewrite pf_new_p_ud_lst; exact  (pf_l u_ids).
+    }
     
-    pose proof (same_u_id_means_same_data Hcb H2 H1 pf_new_p_ud_lst).
+    pose proof (fun_out_same_means_same_element_of_lst Hca Hcb H2 H1 Hnd).
     unfold negb in H4.
     unfold not_iso_check in H4. 
     unfold c_s in hyp.
     rewrite H4 in H3.
     pose proof (Helper_lemma_to_reduce_match_term H3 hyp ).
     inversion H5.
-        exact (pf_l u_ids).
 
   -- inversion H.
   -- inversion H.
@@ -1662,15 +1685,18 @@ Unshelve.
     unfold get_u_id_of_unit_data in H0.
     unfold new_p_ud_lst in H1.
     unfold isolated_list in Hcc. apply filter_In in Hcc. inversion Hcc.
+    assert (NoDup (get_u_ids_of_unit_data new_p_ud_lst) ) as Hnd. {
+      unfold new_p_ud_lst.
+      rewrite pf_new_p_ud_lst; exact  (pf_l u_ids).
+    }
     
-    pose proof (same_u_id_means_same_data Hcb H2 H1 pf_new_p_ud_lst).
+    pose proof (fun_out_same_means_same_element_of_lst Hca Hcb H2 H1 Hnd).
     unfold negb in H4.
     unfold not_iso_check in H4. 
     unfold c_s in hyp.
     rewrite H4 in H3.
     pose proof (Helper_lemma_to_reduce_match_term H3 hyp ).
     inversion H5.
-        exact (pf_l u_ids).
 
   -- inversion H.
   -- inversion H.
@@ -1711,7 +1737,12 @@ Unshelve.
     remember (proj2_sig f) as Prj2_f.
     inversion Prj2_f as [Hcsuid Hcsin].
     rewrite <- Heqs in Hsuid, Hsin.
-    exact ( same_u_id_means_same_data Hsuid Hcsin Hsin pf_new_p_ud_lst (pf_l u_ids)).
+    assert (NoDup (get_u_ids_of_unit_data new_p_ud_lst) ) as Hnd. {
+      unfold new_p_ud_lst.
+      rewrite pf_new_p_ud_lst; exact  (pf_l u_ids).
+    }
+    
+    exact ( fun_out_same_means_same_element_of_lst c_s Hsuid Hcsin Hsin Hnd).
   }        
   pose proof (pf_healthy c_s) as [PFh1 PFh2].
   assert (healthy_data c_s).
@@ -1750,16 +1781,19 @@ Unshelve.
     rewrite H0 in Hcb.
     unfold new_p_ud_lst in H1.
     unfold isolated_list in Hcc. apply filter_In in Hcc. inversion Hcc.
+    assert (NoDup (get_u_ids_of_unit_data new_p_ud_lst) ) as Hnd. {
+      unfold new_p_ud_lst.
+      rewrite pf_new_p_ud_lst; exact  (pf_l u_ids).
+    }
     
-    pose proof (same_u_id_means_same_data Hcb H2 H1 pf_new_p_ud_lst).
+    pose proof (fun_out_same_means_same_element_of_lst Hca Hcb H2 H1 Hnd).
     unfold negb in H4.
     unfold not_iso_check in H4. 
     unfold c_s in hyp.
     rewrite H4 in H3.
     pose proof (Helper_lemma_to_reduce_match_term H3 hyp ).
     inversion H5.
-    exact (pf_l u_ids).
-
+    
   -- inversion H.
   -- inversion H.
   -- intro; inversion H.
@@ -1947,7 +1981,11 @@ Proof.
       assert ( y =  y2 ) as Heqy2y. {
         rewrite <- Huidx in Huidy2.
         rewrite <- Hyequid in Huidy2.
-        exact (same_u_id_means_same_data Huidy2 Hyin Hy2in (pf_ud_lst vs) (pf_l u_ids) ).
+     
+        assert (NoDup (get_u_ids_of_unit_data (u_data_lst vs)) ) as Hnd. {
+          rewrite (pf_ud_lst vs); exact  (pf_l u_ids).
+        }
+        exact (fun_out_same_means_same_element_of_lst y Huidy2 Hyin Hy2in Hnd ).
       }
       rewrite <- Heqy2y in *.
       assert (iso_status (u_status y) = not_isolated ). {

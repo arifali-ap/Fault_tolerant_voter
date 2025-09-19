@@ -1,22 +1,23 @@
-Require Import  Nat.     
-Require Import Bool.    
-Require Import List. 
+From Stdlib Require Import  Nat.     
+From Stdlib Require Import Bool.    
+From Stdlib Require Import List. 
 Import ListNotations.
-Require Import Lia.
+From Stdlib Require Import Lia.
 Import Arith.
-Require Import Coq.Logic.Eqdep_dec.
+From Stdlib Require Import Logic.Eqdep_dec.
 
 Require Import BTProject.config.
 Require Import BTProject.voter_state.
-Require Import BTProject.library_using_list.
+Require Import BTProject.library.
+Require Import BTProject.gen_lemmas.
 
 Require Import BTProject.build_updated_u_data_lst.
 
-Require Import Coq.Arith.PeanoNat.
-Require Import Coq.Logic.Decidable.
-Require Import Coq.Logic.Decidable.
-Require Import Coq.Classes.DecidableClass.
-Require Import Coq.Program.Equality.
+From Stdlib Require Import Arith.PeanoNat.
+From Stdlib Require Import Logic.Decidable.
+From Stdlib Require Import Logic.Decidable.
+From Stdlib Require Import Classes.DecidableClass.
+From Stdlib Require Import Program.Equality.
  
 
 (* if there are no enough non_isolated units present, make the output as invalid *)
@@ -223,9 +224,12 @@ Definition build_un_id_vs
        apply filter_In in Hy1in.
        inversion Hy1in as [Hy1inq Hy1iso].
        rewrite<- Hyeqx in Hy1uid.
+       assert (NoDup (get_u_ids_of_unit_data (u_data_lst vs)) ) as Hnd. {
+         rewrite (pf_ud_lst vs); exact  (pf_l u_ids).
+       }
+       
        assert ( y1 = y) as Heqy1y
-           by exact (same_u_id_means_same_data Hy1uid Hy1inq Hyin
-                       (pf_ud_lst vs) (pf_l u_ids) ).
+           by exact (fun_out_same_means_same_element_of_lst  y1 Hy1uid Hy1inq Hyin Hnd).
        rewrite Heqy1y in Hy1iso.
        exact (nisoc_t_not_isltd Hy1iso).
      }
@@ -290,9 +294,13 @@ Definition build_un_id_vs
            apply filter_In in Hy0innisol.
            inversion Hy0innisol as [Hy0inq Hy0isoprop].
            rewrite Huidxeqy in Huidy0eqy.
+           assert (NoDup (get_u_ids_of_unit_data (u_data_lst vs)) ) as Hnd. {
+             rewrite (pf_ud_lst vs); exact  (pf_l u_ids).
+           }
+       
            assert ( y0 = y )
-             as Hy0eqy by exact (same_u_id_means_same_data Huidy0eqy Hy0inq Hyin
-                                   (pf_ud_lst vs) (pf_l u_ids) ).
+             as Hy0eqy by exact (fun_out_same_means_same_element_of_lst
+                                   y0 Huidy0eqy Hy0inq Hyin Hnd ).
            rewrite Hy0eqy in *.
            exact (nisoc_t_not_isltd Hy0isoprop).
          }

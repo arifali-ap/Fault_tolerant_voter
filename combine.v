@@ -1,22 +1,22 @@
-Require Import  Nat.      
-Require Import Bool.    
-Require Import List. 
+From Stdlib Require Import  Nat.      
+From Stdlib Require Import Bool.    
+From Stdlib Require Import List. 
 Import ListNotations.
-Require Import Lia.
+From Stdlib Require Import Lia.
 Import Arith.
-Require Import Coq.Logic.Eqdep_dec.
+From Stdlib Require Import Logic.Eqdep_dec.
 Require Import BTProject.config.
 Require Import BTProject.voter_state.
-Require Import BTProject.library_using_list.
+Require Import BTProject.library.
 Require Import BTProject.gen_lemmas.
 
-Require Import Coq.Arith.PeanoNat.
-Require Import Coq.Logic.Decidable.
-Require Import Coq.Logic.Decidable.
-Require Import Coq.Classes.DecidableClass.
-Require Import Coq.Program.Equality.
-Require Import Coq.Logic.FunctionalExtensionality.
-Require Import Coq.Init.Specif.  (* For surjective_pairing *)
+From Stdlib Require Import Arith.PeanoNat.
+From Stdlib Require Import Logic.Decidable.
+From Stdlib Require Import Logic.Decidable.
+From Stdlib Require Import Classes.DecidableClass.
+From Stdlib Require Import Program.Equality.
+From Stdlib Require Import Logic.FunctionalExtensionality.
+From Stdlib Require Import Init.Specif.  (* For surjective_pairing *)
 
 
 

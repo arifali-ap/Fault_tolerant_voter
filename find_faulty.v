@@ -1,18 +1,18 @@
-Require Import List.
+From Stdlib Require Import List.
 Import ListNotations. 
-Require Import Lia.
-Require Import Nat.
+From Stdlib Require Import Lia.
+From Stdlib Require Import Nat.
 Import Arith.
-Require Import Lists.ListDec.
-Require Import List Decidable.
+From Stdlib Require Import Lists.ListDec.
+From Stdlib Require Import List Decidable.
 
 Require Import BTProject.config.
 Require Import BTProject.voter_state.
-Require Import BTProject.library_using_list.
+Require Import BTProject.library.
 Require Import BTProject.gen_lemmas.
 Require Import BTProject.combine.
 
-Require Import Coq.Logic.FunctionalExtensionality.
+From Stdlib Require Import Logic.FunctionalExtensionality.
 
 
 

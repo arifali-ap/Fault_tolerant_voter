@@ -1,17 +1,15 @@
-Require Import Nat.  
-Require Import Bool.
-Require Import Vector.
-Import VectorNotations. 
-Require Import List.
+From Stdlib Require Import Nat.  
+From Stdlib Require Import Bool.
+From Stdlib Require Import List.
 Import ListNotations.
-Require Import Lia.
+From Stdlib Require Import Lia.
 Import Arith.
-Require Import Coq.Logic.Eqdep_dec.
-Require Import Coq.Classes.EquivDec.
-Require Import Coq.Arith.PeanoNat.
-Require Import Coq.Logic.ProofIrrelevance.
-Require Import Lists.ListDec.
-Require Import List Decidable.
+From Stdlib Require Import Logic.Eqdep_dec.
+From Stdlib Require Import Classes.EquivDec.
+From Stdlib Require Import Arith.PeanoNat.
+From Stdlib Require Import Logic.ProofIrrelevance.
+From Stdlib Require Import Lists.ListDec.
+From Stdlib Require Import List Decidable.
 Require Import BTProject.gen_lemmas.
 Require Import BTProject.config.
 Require Import BTProject.voter_state.
@@ -191,119 +189,6 @@ Proof.
   intro.
   apply length_zero_iff_nil in H1.
   rewrite H1 in H0. inversion H0.
-Qed.
-
-
-Lemma same_u_id_means_same_data_v2     
-  {a b : unit_data}
-  { ld  : list unit_data }
-  (pf : uid (u_output a) = uid(u_output b) )
-  (pf_a : In a ld)
-  (pf_b : In b ld)
-  (pf_ld : NoDup (get_u_ids_of_unit_data ld))
-  :
-  a = b.
-  induction ld.
-  - inversion pf_a.
-  - 
-    --
-      
-      inversion pf_ld.
-      inversion pf_a.
-      ---
-        inversion pf_b.
-        ----
-          rewrite <- H3, H4.
-          trivial.
-        ----
-          pose proof (in_map (fun a : unit_data => uid (u_output a)) ld b  H4 ).
-          simpl in H5.
-          rewrite <- pf in H5.
-          rewrite H3 in H1.
-          contradiction.
-      ---
-        inversion pf_b.
-        ----
-          pose proof (in_map (fun a : unit_data => uid (u_output a)) ld a  H3 ).
-          simpl in H5.
-          rewrite pf in H5.
-          rewrite H4 in H1.
-          contradiction.
-        ----
-          exact (IHld H3 H4 H2).
-Qed.         
-
-Lemma same_u_id_means_same_data
-  {u_ids : list unit_id}
-  {a b : unit_data}
-  { ld  : list unit_data }
-  (pf : uid (u_output a) = uid(u_output b) )
-  (pf_a : In a ld)
-  (pf_b : In b ld)
-  (pf_ld : get_u_ids_of_unit_data ld = u_ids)
-  (pf_uids: NoDup u_ids)
-  :
-  a = b.
-  assert (NoDup (get_u_ids_of_unit_data ld) ).
-  rewrite pf_ld; trivial.
-  exact (same_u_id_means_same_data_v2
-           pf pf_a pf_b H ).
-Qed.
-
-Lemma same_u_id_means_same_output_v2
-  {a b : unit_output}
-  { ld  : list unit_output }
-  (pf : uid a = uid b)
-  (pf_a : In a ld)
-  (pf_b : In b ld)
-  (pf_ld : NoDup (get_u_ids_of_unit_output ld)):
-  a = b.
-  
-  induction ld.
-  - inversion pf_a.
-  - 
-    --
-      
-      inversion pf_ld.
-      inversion pf_a.
-      ---
-        inversion pf_b.
-        ----
-          rewrite <- H3, H4.
-          trivial.
-        ----
-          pose proof (in_map (fun a  => uid a) ld b  H4 ).
-          simpl in H5.
-          rewrite <- pf in H5.
-          rewrite H3 in H1.
-          contradiction.
-      ---
-        inversion pf_b.
-        ----
-          pose proof (in_map (fun a => uid  a) ld a  H3 ).
-          simpl in H5.
-          rewrite pf in H5.
-          rewrite H4 in H1.
-          contradiction.
-        ----
-          exact (IHld H3 H4 H2).
-Qed.         
-
-
-Lemma same_u_id_means_same_output
-  {u_ids : list unit_id}
-  {a b : unit_output}
-  { ld  : list unit_output }
-  (pf : uid a = uid b)
-  (pf_a : In a ld)
-  (pf_b : In b ld)
-  (pf_ld : get_u_ids_of_unit_output ld = u_ids)
-  (pf_uids: NoDup u_ids):
-
-  a = b.
-  assert ( NoDup (get_u_ids_of_unit_output ld)).
-  rewrite pf_ld; trivial.
-  exact ( same_u_id_means_same_output_v2 pf pf_a pf_b H).
 Qed.
 
 

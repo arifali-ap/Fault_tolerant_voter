@@ -1,15 +1,46 @@
-Require Import  Nat.     
-Require Import Bool.    
-Require Import List. 
+From Stdlib Require Import  Nat.     
+From Stdlib Require Import Bool.    
+From Stdlib Require Import List. 
 Import ListNotations.
  
-Require Import Lia.
-Require Import Nat.
+From Stdlib Require Import Lia.
+From Stdlib Require Import Nat.
 Import Arith.
-Require Import Lists.ListDec.
-Require Import List Decidable.
+From Stdlib Require Import Lists.ListDec.
+From Stdlib Require Import List Decidable.
 
 
+
+Lemma fun_out_same_means_same_element_of_lst
+  {A B : Type }
+  (a : A) {b : A}
+  { f  : A -> B }
+  { ld  : list A }
+  (pf : f a = f b)
+  (pf_a : In a ld)
+  (pf_b : In b ld)
+  (pf_ld : NoDup (map (fun y => f y)  ld) ):
+  a = b.
+  
+  induction ld;
+    inversion pf_a;
+    inversion pf_ld;
+    inversion pf_b.
+  
+  - rewrite <- H, H4.
+    trivial.
+  - pose proof (in_map (fun a  => f a) ld b  H4 ).
+    simpl in H5.
+    rewrite <- pf in H5.
+    rewrite H in H0, H2.
+    contradiction.
+  - pose proof (in_map (fun a => f  a) ld a  H ).
+    simpl in H5.
+    rewrite pf in H5.
+    rewrite H4 in H2.
+    contradiction.
+  - exact (IHld H H4 H3).
+Qed.         
  
 
 

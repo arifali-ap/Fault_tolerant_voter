@@ -1,4 +1,4 @@
-Require Import Nat.  
+From Stdlib Require Import Nat.  
 
   
  

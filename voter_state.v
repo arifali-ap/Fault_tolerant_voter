@@ -1,17 +1,15 @@
-Require Import Nat.  
-Require Import Bool.
-Require Import Vector.
-Import VectorNotations. 
-Require Import List.
+From Stdlib Require Import Nat.  
+From Stdlib Require Import Bool.
+From Stdlib Require Import List.
 Import ListNotations.
-Require Import Lia.
+From Stdlib Require Import Lia.
 Import Arith.
-Require Import Coq.Logic.Eqdep_dec.
-Require Import Coq.Classes.EquivDec.
-Require Import Coq.Arith.PeanoNat.
-Require Import Coq.Logic.ProofIrrelevance.
-Require Import Lists.ListDec.
-Require Import List Decidable.
+From Stdlib Require Import Logic.Eqdep_dec.
+From Stdlib Require Import Classes.EquivDec.
+From Stdlib Require Import Arith.PeanoNat.
+From Stdlib Require Import Logic.ProofIrrelevance.
+From Stdlib Require Import Lists.ListDec.
+From Stdlib Require Import List Decidable.
 Require Import BTProject.gen_lemmas.
 Require Import BTProject.config.
 
@@ -37,16 +35,11 @@ Record uid_list := uid_list_build {
 Definition create_uid_list  (l: list nat)(pf_l : NoDup l) : uid_list.
   refine (
       let x := map (fun y =>  uid_con y) l in
-      uid_list_build x _ ).
-     
-  induction pf_l.
-  - simpl in *. apply NoDup_nil.
-  - simpl in *.  apply NoDup_cons.
-    +  intros H0. apply H.
-      apply in_map_iff in H0. 
-      destruct H0 as [n [H1 H2]].
-      inversion H1. subst. trivial.
-    + trivial.
+      uid_list_build x
+        (NoDup_map_NoDup_ForallPairs _ _ pf_l)).
+  unfold ForallPairs. 
+  intros a b Hain Hbin Haeqb.
+  inversion Haeqb. trivial.
 Defined.
 
 Definition u_ids := create_uid_list (seq 1 num_units) (seq_NoDup num_units 1).  
