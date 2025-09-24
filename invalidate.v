@@ -224,12 +224,9 @@ Definition build_un_id_vs
        apply filter_In in Hy1in.
        inversion Hy1in as [Hy1inq Hy1iso].
        rewrite<- Hyeqx in Hy1uid.
-       assert (NoDup (get_u_ids_of_unit_data (u_data_lst vs)) ) as Hnd. {
-         rewrite (pf_ud_lst vs); exact  (pf_l u_ids).
-       }
-       
        assert ( y1 = y) as Heqy1y
-           by exact (fun_out_same_means_same_element_of_lst  y1 Hy1uid Hy1inq Hyin Hnd).
+           by exact (fun_out_same_means_same_element_of_lst  y1 Hy1uid Hy1inq Hyin 
+                       (mapped_list_nodup (pf_ud_lst vs) (pf_l u_ids))).
        rewrite Heqy1y in Hy1iso.
        exact (nisoc_t_not_isltd Hy1iso).
      }
@@ -294,13 +291,10 @@ Definition build_un_id_vs
            apply filter_In in Hy0innisol.
            inversion Hy0innisol as [Hy0inq Hy0isoprop].
            rewrite Huidxeqy in Huidy0eqy.
-           assert (NoDup (get_u_ids_of_unit_data (u_data_lst vs)) ) as Hnd. {
-             rewrite (pf_ud_lst vs); exact  (pf_l u_ids).
-           }
-       
            assert ( y0 = y )
              as Hy0eqy by exact (fun_out_same_means_same_element_of_lst
-                                   y0 Huidy0eqy Hy0inq Hyin Hnd ).
+                                   y0 Huidy0eqy Hy0inq Hyin
+                                   (mapped_list_nodup (pf_ud_lst vs) (pf_l u_ids)) ).
            rewrite Hy0eqy in *.
            exact (nisoc_t_not_isltd Hy0isoprop).
          }

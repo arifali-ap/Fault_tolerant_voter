@@ -9,7 +9,16 @@ Import Arith.
 From Stdlib Require Import Lists.ListDec.
 From Stdlib Require Import List Decidable.
 
-
+Lemma mapped_list_nodup
+  { A B : Type }
+  { l1 : list A}
+  { l2 : list B}
+  { f : A ->  B}
+  (pf_l : map f l1 = l2 )
+  (pf_nd : NoDup l2 ) : NoDup (map f l1).
+  rewrite pf_l.
+  trivial.
+Qed.  
 
 Lemma fun_out_same_means_same_element_of_lst
   {A B : Type }
@@ -87,12 +96,12 @@ Proof.
     assert (length l2 = S (length l0) ).
     { rewrite Heql0.
       rewrite Hl2.
-      rewrite ( app_length).
+      rewrite ( length_app).
       assert ( length (a::l22) = S (length l22) ). {
         unfold length. lia.
       }
       rewrite H6.
-      rewrite app_length.
+      rewrite length_app.
       lia.
     }
     lia. 

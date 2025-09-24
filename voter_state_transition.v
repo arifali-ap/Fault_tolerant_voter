@@ -28,55 +28,55 @@ Lemma pf_age_satisfied_bad_case
   {vs : voter_state}
   {lsd : list unit_data}
   (pf_lsd : get_u_ids_of_unit_data lsd = l u_ids )
-  {f : {x : unit_data | uid (voter_output vs) = get_u_id_of_unit_data x
-                          /\ In x lsd} }
-  (pf_h : hw_hlth (reading (u_output (proj1_sig f))) = bad)
+  {x : unit_data}
+  (pf_x :  uid (voter_output vs) = get_u_id_of_unit_data x
+                          /\ In x lsd)
+  (pf_h : hw_hlth (reading (u_output x)) = bad)
   :   S (output_age vs) = 0 <->  
         valid = valid /\ In (presrvd_data vs) lsd.
-
-  repeat split.
-      - inversion H.
-      - intro. inversion H.
-        pose proof (proj2_sig f). inversion H2.
-        pose proof (pf_presrvd_data vs). inversion H5 as [H5a [H5b [H5c H5d]]].
-        assert ( uid (voter_output vs) = get_u_id_of_unit_data (presrvd_data vs) ).
-        { unfold get_u_id_of_unit_data. rewrite H5a. trivial. }
-        rewrite H3 in H6.
-        assert (NoDup (get_u_ids_of_unit_data lsd) ) as Hnd. {
-          rewrite pf_lsd; exact  (pf_l u_ids).
-        }
- 
-        pose proof (fun_out_same_means_same_element_of_lst
-                      (proj1_sig f) H6 H4 H1 Hnd  ). 
-        rewrite <- H7 in H5b.
-        rewrite H5b in pf_h.
-        inversion pf_h.
+  
+  repeat split.  
+  - inversion H.
+  - intro. inversion H as [Hvld Hin].
+    inversion pf_x as [Huid Hxin].
+    pose proof (pf_presrvd_data vs) as [Heqout [Hgd [Hniso Hnmis]]].
+    assert ( uid (voter_output vs) = get_u_id_of_unit_data (presrvd_data vs) )
+      as Heqid.
+    { unfold get_u_id_of_unit_data. rewrite Heqout. trivial. }
+    rewrite Huid in Heqid.
+    assert (x = presrvd_data vs)
+      as Hxeq by exact  (fun_out_same_means_same_element_of_lst
+                           x Heqid Hxin Hin (mapped_list_nodup pf_lsd (pf_l u_ids))). 
+    rewrite <- Hxeq in Hgd.
+    rewrite Hgd in pf_h.
+    inversion pf_h.
 Qed.
 
 Lemma pf_age_satisfied_mis_case
   {vs : voter_state}
   {lsd : list unit_data}
   (pf_lsd : get_u_ids_of_unit_data lsd = l u_ids )
-  {f : {x : unit_data | uid (voter_output vs) = get_u_id_of_unit_data x
-                          /\ In x lsd} }
-  (pf_m : miscomp_status (u_status (proj1_sig f)) <> not_miscomparing)
+  {x : unit_data}
+  (pf_x :  uid (voter_output vs) = get_u_id_of_unit_data x
+           /\ In x lsd)
+  (pf_m : miscomp_status (u_status x) <> not_miscomparing)
   :   S (output_age vs) = 0 <->  
         valid = valid /\ In (presrvd_data vs) lsd.
 
-  repeat split.
-      - inversion H.
-      - intro. inversion H.
-        pose proof (proj2_sig f). inversion H2.
-        pose proof (pf_presrvd_data vs). inversion H5 as [H5a [H5b [H5c H5d]]].
-        assert ( uid (voter_output vs) = get_u_id_of_unit_data (presrvd_data vs) ). { unfold get_u_id_of_unit_data. rewrite H5a. trivial. }
-        rewrite H3 in H6.
-        assert (NoDup (get_u_ids_of_unit_data lsd) ) as Hnd. {
-          rewrite pf_lsd; exact  (pf_l u_ids).
-        }
-        pose proof (fun_out_same_means_same_element_of_lst (proj1_sig f) H6 H4 H1 Hnd). 
-        rewrite <- H7 in H5d.
-        rewrite H5d in pf_m.
-        contradiction.
+  repeat split.  
+  - inversion H.
+  - intro. inversion H as [Hvld Hin].
+    inversion pf_x as [Huid Hxin].
+    pose proof (pf_presrvd_data vs) as [Heqout [Hgd [Hniso Hnmis]]].
+    assert ( uid (voter_output vs) = get_u_id_of_unit_data (presrvd_data vs) )
+      as Heqid.
+    { unfold get_u_id_of_unit_data. rewrite Heqout. trivial. }
+    rewrite Huid in Heqid.
+    assert (x = presrvd_data vs)
+      as Hxeq by exact  (fun_out_same_means_same_element_of_lst
+                           x Heqid Hxin Hin (mapped_list_nodup pf_lsd (pf_l u_ids))).
+    rewrite Hxeq in pf_m.
+    contradiction.
 Qed.
 
 
@@ -88,9 +88,10 @@ Lemma vs_is_valid
   (pf_lsd : lsd = build_updated_u_data_lst (pf_l u_ids)
                     pf_all_unit_outputs (pf_ud_lst vs) )
   (pf_min_req :  min_required <= count_of_non_isolated_units lsd)
-  {f : {x : unit_data | uid (voter_output vs) = get_u_id_of_unit_data x
-                          /\ In x lsd} }
-  (pf_iso : iso_status (u_status (proj1_sig f)) = not_isolated)
+  {prm_unt : unit_data}
+  (pf_prm_unt :  uid (voter_output vs) = get_u_id_of_unit_data prm_unt
+                 /\ In prm_unt lsd)
+  (pf_iso : iso_status (u_status prm_unt) = not_isolated)
   :  voter_validity vs = valid.
   
 Proof.
@@ -114,14 +115,11 @@ Proof.
     contradiction.
   }
 
-  remember (proj2_sig f).
-  inversion a.
-  clear Heqa a.
-  remember (proj1_sig f) as c_s.
-  assert (In (uid (u_output c_s))
+  inversion pf_prm_unt.
+  assert (In (uid (u_output prm_unt))
               (get_u_ids_of_unit_data (non_isolated_list (lsd)))) as Hnisonw.
   { unfold get_u_ids_of_unit_data. apply in_map_iff.
-    exists c_s.
+    exists prm_unt.
     split; trivial.
     apply filter_In.
     split; trivial.
@@ -131,7 +129,7 @@ Proof.
   rewrite  pf_lsd in Hnisonw.
   pose proof ( not_isolated_after_update_implies_not_isolated_before
                  (pf_l u_ids) pf_all_unit_outputs (pf_ud_lst vs)
-                 (uid (u_output c_s))  Hnisonw) as Hnisovs.
+                 (uid (u_output prm_unt))  Hnisonw) as Hnisovs.
   unfold get_u_id_of_unit_data in Hnisovs.
   assert (voter_validity vs <> un_id ). {
     intro Hunid. pose proof (Hud2 Hunid) as  [Hcntge Houtiso].
@@ -148,14 +146,9 @@ Proof.
     apply filter_In in Hy1in, Hyiniso.
     inversion Hy1in as [Hy1inpq Hy1iso].
     inversion Hyiniso as [Hyinpq Hyiso].
-    
-    assert (NoDup (get_u_ids_of_unit_data (u_data_lst vs)) ) as Hnd. {
-      rewrite (pf_ud_lst vs); exact  (pf_l u_ids).
-    }
-    
     assert(y1 = y) as Hy1eqy
         by exact (fun_out_same_means_same_element_of_lst y1 Hy1uid Hy1inpq Hyinpq
-                    Hnd).
+                    (mapped_list_nodup (pf_ud_lst vs) (pf_l u_ids))).
     rewrite Hy1eqy in Hy1iso.
     rewrite Hy1iso in Hyiso.
     inversion Hyiso.
@@ -175,21 +168,20 @@ Lemma vsout_not_isolated
   {lsd : list unit_data}
   (pf_lsd : lsd = build_updated_u_data_lst (pf_l u_ids)
                     pf_all_unit_outputs (pf_ud_lst vs) )
-  {f : {x : unit_data | uid (voter_output vs) = get_u_id_of_unit_data x
-                          /\ In x lsd} }
-  (pf_iso : iso_status (u_status (proj1_sig f)) = not_isolated)
+  {prm_unt : unit_data}
+  (pf_prm_unt :  uid (voter_output vs) = get_u_id_of_unit_data prm_unt
+                 /\ In prm_unt lsd)
+  (pf_iso : iso_status (u_status prm_unt) = not_isolated)
   : let VSout := (find_data_of_a_given_unit_id (pf_ud_lst vs) (pf_v_output vs)) in
     iso_status (u_status (proj1_sig  VSout)) = not_isolated.
 
 Proof.
   intro.
-  remember ( proj2_sig f). inversion a as  [Hcsuid Hcsin]. 
-  clear Heqa a.
-  remember (proj1_sig f) as c_s.
-  assert (In (uid (u_output c_s))
+  inversion pf_prm_unt as  [Hcsuid Hcsin]. 
+  assert (In (uid (u_output prm_unt))
             (get_u_ids_of_unit_data (non_isolated_list (lsd)))) as Hnisonw.
   { unfold get_u_ids_of_unit_data. apply in_map_iff.
-    exists c_s.
+    exists prm_unt.
     split; trivial.
     apply filter_In.
     split; trivial.
@@ -199,7 +191,7 @@ Proof.
   rewrite  pf_lsd in Hnisonw.
   pose proof ( not_isolated_after_update_implies_not_isolated_before
                  (pf_l u_ids) pf_all_unit_outputs (pf_ud_lst vs)
-                 (uid (u_output c_s))  Hnisonw) as Hnisovs.
+                 (uid (u_output prm_unt))  Hnisonw) as Hnisovs.
   unfold get_u_id_of_unit_data in Hnisovs.
   remember (proj2_sig  VSout) as f_vs.
   inversion f_vs as [Hvsoutuid Hvsoutin].
@@ -211,13 +203,9 @@ Proof.
   inversion Hnisovs as [y1 [Hy1uid Hy1inniso]].
   apply filter_In in Hy1inniso.
   inversion Hy1inniso as [Hy1in Hy1iso].
-  assert (NoDup (get_u_ids_of_unit_data (u_data_lst vs)) ) as Hnd. {
-    rewrite (pf_ud_lst vs); exact  (pf_l u_ids).
-  }
-  
   assert (y1 = proj1_sig VSout) as Heqy1vsout
-      by exact (fun_out_same_means_same_element_of_lst
-                  y1 Hy1uid Hy1in Hvsoutin Hnd).
+      by exact (fun_out_same_means_same_element_of_lst  y1 Hy1uid Hy1in Hvsoutin
+                  (mapped_list_nodup (pf_ud_lst vs) (pf_l u_ids))).
   rewrite <- Heqy1vsout.
   exact (nisoc_t_not_isltd Hy1iso).
 Qed.
@@ -230,19 +218,18 @@ Lemma risky_cnt_age_prop_satisfied_miscomp_or_mayb_case
   (pf_lsd : lsd = build_updated_u_data_lst (pf_l u_ids)
                     pf_all_unit_outputs (pf_ud_lst vs) )
   (pf_min_req :  min_required <= count_of_non_isolated_units lsd)
-  {f : {x : unit_data | uid (voter_output vs) = get_u_id_of_unit_data x
-                          /\ In x lsd} }
-  (pf_m : miscomp_status (u_status (proj1_sig f)) <> not_miscomparing)
-  (pf_iso : iso_status (u_status (proj1_sig f)) = not_isolated)
-  :  S (output_age vs) = risky_count (u_status (proj1_sig f)).
+  {prm_unt : unit_data}
+  (pf_prm_unt :  uid (voter_output vs) = get_u_id_of_unit_data prm_unt
+                 /\ In prm_unt lsd)
+  (pf_m : miscomp_status (u_status prm_unt) <> not_miscomparing)
+  (pf_iso : iso_status (u_status prm_unt) = not_isolated)
+  :  S (output_age vs) = risky_count (u_status prm_unt).
 
 Proof.
   assert (voter_validity vs = valid) as Hvld
-    by exact (vs_is_valid pf_lsd pf_min_req pf_iso ).
+    by exact (vs_is_valid pf_lsd pf_min_req pf_prm_unt pf_iso ).
   pose proof ( pf_risky_cnt vs Hvld) as Hpfrc.  
-  remember ( proj2_sig f). inversion a as  [Hcsuid Hcsin]. 
-  clear Heqa a.
-  remember (proj1_sig f) as c_s.
+  inversion pf_prm_unt as  [Hcsuid Hcsin]. 
   
   pose proof (pf_validity vs) as [[Hnv1 Hnv2][[Huid1 Hud2] Hhlnil]].
   remember (find_data_of_a_given_unit_id (pf_ud_lst vs) (pf_v_output vs)) as VSout.
@@ -251,25 +238,24 @@ Proof.
   clear Heqf_vs f_vs.
   unfold get_u_id_of_unit_data in *.
   pose proof (eq_stepl Hcsuid Hvsoutuid ) as Huideq.
-  assert (risky_cnt_prop (proj1_sig VSout) c_s) as Hrcp. {
+  assert (risky_cnt_prop (proj1_sig VSout) prm_unt) as Hrcp. {
     rewrite pf_lsd in Hcsin.
     exact (build_updated_u_data_lst_holds_risky_cnt_prop
                 (pf_l u_ids) pf_all_unit_outputs (pf_ud_lst vs)
                   (proj1_sig VSout)
-                  Hvsoutin  c_s  Hcsin Huideq).
+                  Hvsoutin  prm_unt  Hcsin Huideq).
   }
   unfold risky_cnt_prop in Hrcp.
     
   assert (  iso_status (u_status (proj1_sig  VSout)) = not_isolated )
     as Hnisovsout. {
-    rewrite Heqc_s in pf_iso.
     rewrite HeqVSout.
-    exact (vsout_not_isolated pf_lsd pf_iso).
+    exact (vsout_not_isolated pf_lsd pf_prm_unt pf_iso).
   }
   
   pose proof (Hrcp Hnisovsout)  as [Err1 Err2].
   inversion Err1.  
-  { pose proof (pf_healthy c_s) as [PF1 PF2].
+  { pose proof (pf_healthy prm_unt) as [PF1 PF2].
     pose proof (PF1 H) as [PF3a [PF3b PF3c]].
     rewrite PF3c in pf_m.
     contradiction.
@@ -286,19 +272,18 @@ Lemma risky_cnt_age_prop_satisfied_bad
   (pf_lsd : lsd = build_updated_u_data_lst (pf_l u_ids)
                     pf_all_unit_outputs (pf_ud_lst vs) )
   (pf_min_req :  min_required <= count_of_non_isolated_units lsd)
-  {f : {x : unit_data | uid (voter_output vs) = get_u_id_of_unit_data x
-                          /\ In x lsd} }
-  (pf_h : hw_hlth (reading (u_output (proj1_sig f)))  = bad)
-  (pf_iso : iso_status (u_status (proj1_sig f)) = not_isolated)
-  :  S (output_age vs) = risky_count (u_status (proj1_sig f)).
+  {prm_unt : unit_data}
+  (pf_prm_unt :  uid (voter_output vs) = get_u_id_of_unit_data prm_unt
+                 /\ In prm_unt lsd)
+  (pf_h : hw_hlth (reading (u_output prm_unt))  = bad)
+  (pf_iso : iso_status (u_status prm_unt) = not_isolated)
+  :  S (output_age vs) = risky_count (u_status prm_unt).
 
 Proof.
   assert (voter_validity vs = valid) as Hvld
-    by exact (vs_is_valid pf_lsd pf_min_req pf_iso ).
+    by exact (vs_is_valid pf_lsd pf_min_req pf_prm_unt pf_iso ).
   pose proof ( pf_risky_cnt vs Hvld) as Hpfrc.  
-  remember ( proj2_sig f). inversion a as  [Hcsuid Hcsin]. 
-  clear Heqa a.
-  remember (proj1_sig f) as c_s.
+  inversion pf_prm_unt as  [Hcsuid Hcsin]. 
   
   pose proof (pf_validity vs) as [[Hnv1 Hnv2][[Huid1 Hud2] Hhlnil]].
   remember (find_data_of_a_given_unit_id (pf_ud_lst vs) (pf_v_output vs)) as VSout.
@@ -307,25 +292,24 @@ Proof.
   clear Heqf_vs f_vs.
   unfold get_u_id_of_unit_data in *.
   pose proof (eq_stepl Hcsuid Hvsoutuid ) as Huideq.
-  assert (risky_cnt_prop (proj1_sig VSout) c_s) as Hrcp. {
+  assert (risky_cnt_prop (proj1_sig VSout) prm_unt) as Hrcp. {
     rewrite pf_lsd in Hcsin.
     exact (build_updated_u_data_lst_holds_risky_cnt_prop
                 (pf_l u_ids) pf_all_unit_outputs (pf_ud_lst vs)
                   (proj1_sig VSout)
-                  Hvsoutin  c_s  Hcsin Huideq).
+                  Hvsoutin  prm_unt  Hcsin Huideq).
   }
   unfold risky_cnt_prop in Hrcp.
     
   assert (  iso_status (u_status (proj1_sig  VSout)) = not_isolated )
     as Hnisovsout. {
-    rewrite Heqc_s in pf_iso.
     rewrite HeqVSout.
-    exact (vsout_not_isolated pf_lsd pf_iso).
+    exact (vsout_not_isolated pf_lsd pf_prm_unt pf_iso).
   }
    
   pose proof (Hrcp Hnisovsout)  as [Err1 Err2].
   inversion Err1.  
-  { pose proof (pf_healthy c_s) as [PF1 PF2].
+  { pose proof (pf_healthy prm_unt) as [PF1 PF2].
     pose proof (PF1 H) as [PF3a [PF3b PF3c]].
     rewrite PF3a in pf_h.
     inversion pf_h.
@@ -542,12 +526,12 @@ refine (
                  (build_invalidated_vs vs new_p_ud_lst pf_new_p_ud_lst   _  ) _
   | left  e =>
      
-      let f := (@find_data_of_a_given_unit_id
-                  (l u_ids) new_p_ud_lst (uid (voter_output vs)) pf_new_p_ud_lst _    ) in 
-      let c_s := proj1_sig f in
-      let c_s_iso := c_s.(u_status).(iso_status) in 
-      match c_s.(u_status).(iso_status) as C_S return
-            c_s.(u_status).(iso_status) = C_S ->
+      let (prm_unt, pf_prm_unt) :=
+        (@find_data_of_a_given_unit_id
+           (l u_ids) new_p_ud_lst (uid (voter_output vs)) pf_new_p_ud_lst _    ) in 
+      let prm_unt_iso := prm_unt.(u_status).(iso_status) in 
+      match prm_unt.(u_status).(iso_status) as pu_ISO return
+            prm_unt.(u_status).(iso_status) = pu_ISO ->
             { x: voter_state |  voter_state_transition_prop vs x
                                   pf_all_unit_outputs} with
       | isolated     => fun hyp =>
@@ -570,10 +554,10 @@ refine (
                          end eq_refl
                              
       | not_isolated => fun hyp
-                        => let c_s_r := c_s.(u_output).(reading).(hw_hlth) in
-                           let c_s_m := c_s.(u_status).(miscomp_status) in 
-                           match  c_s_m as CSM, c_s_r as CSR return
-                                  c_s_m = CSM -> c_s_r = CSR ->
+                        => let prm_unt_r := prm_unt.(u_output).(reading).(hw_hlth) in
+                           let prm_unt_m := prm_unt.(u_status).(miscomp_status) in 
+                           match  prm_unt_m as pu_m, prm_unt_r as pu_r return
+                                  prm_unt_m = pu_m -> prm_unt_r = pu_r ->
                                   { x: voter_state |
                                     voter_state_transition_prop vs x
                                       pf_all_unit_outputs}
@@ -584,10 +568,10 @@ refine (
                                                ( voter_state_build
                                                    new_p_ud_lst
                                                    pf_new_p_ud_lst
-                                                   c_s.(u_output)
+                                                   prm_unt.(u_output)
                                                          valid
                                                          0
-                                                         c_s
+                                                         prm_unt
                                                          _ _ _ _ _  _ _ _ ) _ 
                            | _, _
                              => fun h
@@ -616,20 +600,21 @@ Unshelve.
    (get_u_ids_of_unit_data (isolated_list
    (build_updated_u_data_lst2 (pf_l u_ids)
    pf_all_unit_outputs (pf_ud_lst vs)))) *)
-10: { remember (proj2_sig f). inversion a.
-     unfold get_u_ids_of_unit_data.
-     apply in_map_iff.
-     exists c_s. split.
-     unfold get_u_id_of_unit_data in H.
-     symmetry. trivial.
-     unfold isolated_list.
-     apply filter_In.
-     split. trivial.
-     unfold negb. unfold not_iso_check. rewrite hyp. trivial.
+10: {
+  inversion pf_prm_unt.
+  unfold get_u_ids_of_unit_data.
+  apply in_map_iff.
+  exists prm_unt. split.
+  unfold get_u_id_of_unit_data in H.
+  symmetry. trivial.
+  unfold isolated_list.
+  apply filter_In.
+  split. trivial.
+  unfold negb. unfold not_iso_check. rewrite hyp. trivial.
 }
 (* In (uid (voter_output vs))
    (get_u_ids_of_unit_data new_p_ud_lst) *)
-8: { exact (uid_of_vs_out_in_uids vs pf_new_p_ud_lst). }
+1: { exact (uid_of_vs_out_in_uids vs pf_new_p_ud_lst). }
 
 (*  In (uid (voter_output vs))
    (get_u_ids_of_unit_data new_p_ud_lst) *)
@@ -642,31 +627,31 @@ Unshelve.
 (* In (uid (voter_output vs))
    (get_u_ids_of_unit_data new_p_ud_lst) *)    
 29: {  exact (uid_of_vs_out_in_uids vs pf_new_p_ud_lst). }
-
+ 
 (* S (output_age vs) = 0 <->  
  valid = valid /\ In (presrvd_data vs) new_p_ud_lst *) 
-15: { exact (pf_age_satisfied_bad_case pf_new_p_ud_lst h2). }
+15: {  exact (pf_age_satisfied_bad_case pf_new_p_ud_lst pf_prm_unt h2). }
 
 (*  S (output_age vs) = 0 <->
     valid = valid /\ In (presrvd_data vs) new_p_ud_lst *)
 9: {
-  assert (miscomp_status (u_status c_s) <> not_miscomparing). {
+  assert (miscomp_status (u_status prm_unt) <> not_miscomparing). {
     intro Hmis.
-    unfold c_s_m in h.
+    unfold prm_unt_m in h.
     rewrite Hmis in h.
     inversion h.
   }
-  exact (pf_age_satisfied_mis_case pf_new_p_ud_lst H). }
+  exact (pf_age_satisfied_mis_case pf_new_p_ud_lst pf_prm_unt H). }
   
 (* S (output_age vs) = 0 <->  
  valid = valid /\ In (presrvd_data vs) new_p_ud_lst *) 
-27: {assert (miscomp_status (u_status c_s) <> not_miscomparing). {
+27: {assert (miscomp_status (u_status prm_unt) <> not_miscomparing). {
     intro Hmis.
-    unfold c_s_m in h.
+    unfold prm_unt_m in h.
     rewrite Hmis in h.
     inversion h.
   }
-  exact (pf_age_satisfied_mis_case pf_new_p_ud_lst H). }
+  exact (pf_age_satisfied_mis_case pf_new_p_ud_lst pf_prm_unt H). }
  
 
 
@@ -844,12 +829,11 @@ Unshelve.
        (proj1_sig
           (build_prime_switched_vs vs pf_new_p_ud_lst e hyp2*)     
   -- simpl.
-     remember (proj2_sig f).
-     inversion a.
+     inversion pf_prm_unt.
      intro.
       unfold get_u_ids_of_unit_data.
       apply in_map_iff.
-      exists c_s. split.
+      exists prm_unt. split.
       unfold uid in H. 
       unfold get_u_id_of_unit_data in H.
       symmetry. trivial.
@@ -1032,10 +1016,10 @@ Unshelve.
     {|
       u_data_lst := new_p_ud_lst;
       pf_ud_lst := pf_new_p_ud_lst;
-      voter_output := u_output c_s;
+      voter_output := u_output prm_unt;
       voter_validity := valid;
       output_age := 0;
-      presrvd_data := c_s; *)
+      presrvd_data := prm_unt; *)
      
 - repeat split.
   --  simpl in H0;
@@ -1052,8 +1036,8 @@ Unshelve.
      pose proof (build_updated_u_data_lst_holds_risky_cnt_prop (pf_l u_ids) pf_all_unit_outputs (pf_ud_lst vs) x H y H0 H1 H2).
      inversion H3 as [Ha [Hb Hc]].
      trivial.
-  -- simpl. intro. remember (proj2_sig f).
-     inversion a.
+  -- simpl. intro.
+     inversion pf_prm_unt.
      unfold get_u_id_of_unit_data in H0.
      rewrite H0 in H. contradiction.
   -- intro; contradiction.
@@ -1138,17 +1122,13 @@ Unshelve.
                    (pf_l u_ids) pf_all_unit_outputs (pf_ud_lst vs) x H y H0 H1 H2);
        inversion H3 as [Ha [Hb Hc]];
        trivial.
-  --simpl. intro. remember (proj2_sig f).
-     inversion a.
+  --simpl. intro. inversion pf_prm_unt.
      unfold get_u_id_of_unit_data in H0.
      rewrite H0 in H. contradiction.
   --  simpl. intros.
-      remember (proj2_sig f).
-      fold c_s in a.
-      simpl in a.
       exfalso.
       apply H.
-      inversion a as [Ha1 Ha2].
+      inversion pf_prm_unt as [Ha1 Ha2].
       unfold get_u_id_of_unit_data in Ha1.
       trivial.
 
@@ -1393,11 +1373,10 @@ Unshelve.
     (get_u_ids_of_unit_data (isolated_list new_p_ud_lst)) *)
       
 - repeat split; trivial.
-  remember (proj2_sig f).
-  inversion a.
+  inversion pf_prm_unt.
   unfold get_u_ids_of_unit_data.
   apply in_map_iff.
-  exists c_s.
+  exists prm_unt.
   split.  
       unfold get_u_id_of_unit_data in H.
       symmetry. trivial.
@@ -1414,21 +1393,15 @@ Unshelve.
     unfold get_u_ids_of_unit_data in Hc.
     apply in_map_iff in Hc.
     inversion Hc as [Hca [Hcb Hcc]].
-    remember (proj2_sig f).
-    inversion a.
+    inversion pf_prm_unt.
     unfold get_u_id_of_unit_data in H0.
     rewrite H0 in Hcb.
     unfold new_p_ud_lst in H1.
     unfold isolated_list in Hcc. apply filter_In in Hcc. inversion Hcc.
-    assert (NoDup (get_u_ids_of_unit_data new_p_ud_lst) ) as Hnd. {
-      unfold new_p_ud_lst.
-      rewrite pf_new_p_ud_lst; exact  (pf_l u_ids).
-    }
-    
-    pose proof (fun_out_same_means_same_element_of_lst Hca Hcb H2 H1 Hnd).
+    pose proof (fun_out_same_means_same_element_of_lst Hca Hcb H2 H1 
+                  (mapped_list_nodup pf_new_p_ud_lst (pf_l u_ids))).
     unfold negb in H3.
     unfold not_iso_check in H3. 
-    unfold c_s in hyp.
     rewrite H4 in H3.
     pose proof (Helper_lemma_to_reduce_match_term H3 hyp ).
     inversion H5.
@@ -1440,10 +1413,10 @@ Unshelve.
   In (uid (voter_output vs))
     (get_u_ids_of_unit_data (non_isolated_list new_p_ud_lst)) *)
     
-- intro. remember (proj2_sig f). inversion a.
+- intro.  inversion  pf_prm_unt.
   rewrite H0.
   apply in_map_iff.
-  exists c_s.
+  exists prm_unt.
   split; trivial.
   apply filter_In.
   split; trivial.
@@ -1451,9 +1424,8 @@ Unshelve.
 
 
 -   (* risky_cnt_age_prop pf_new_p_ud_lst : when miscomparing *)
-  assert (miscomp_status (u_status (proj1_sig f)) <> not_miscomparing) as Hmis. {
-    intro Nm. unfold c_s_m in h.
-    unfold c_s in h.
+  assert (miscomp_status (u_status prm_unt) <> not_miscomparing) as Hmis. {
+    intro Nm. unfold prm_unt_m in h.
     rewrite h in Nm.
     inversion Nm.
   }
@@ -1461,8 +1433,22 @@ Unshelve.
                         pf_all_unit_outputs (pf_ud_lst vs) ) as pf_lsd by trivial.
   unfold risky_cnt_age_prop.
   intro.
-  exact (risky_cnt_age_prop_satisfied_miscomp_or_mayb_case
-           pf_lsd e Hmis hyp).
+  assert ( prm_unt = proj1_sig
+                       (find_data_of_a_given_unit_id pf_new_p_ud_lst
+                          (uid_of_vs_out_in_uids vs pf_new_p_ud_lst)) ) as Heqprm. {
+    pose proof (proj2_sig
+                  (find_data_of_a_given_unit_id pf_new_p_ud_lst
+                     (uid_of_vs_out_in_uids vs pf_new_p_ud_lst)) ) as [Heqid Hin].
+    inversion pf_prm_unt as [Heqidprm Hinprm].
+    rewrite Heqid in Heqidprm.
+    symmetry in Heqidprm.
+    exact (fun_out_same_means_same_element_of_lst prm_unt Heqidprm Hinprm Hin 
+             (mapped_list_nodup pf_new_p_ud_lst (pf_l u_ids))).
+  }
+  pose proof (risky_cnt_age_prop_satisfied_miscomp_or_mayb_case
+                pf_lsd e  pf_prm_unt Hmis hyp) as Hreq.
+  rewrite Heqprm in Hreq.
+  exact Hreq.
 
 
 - (* miscomparing case 
@@ -1474,16 +1460,15 @@ Unshelve.
   assert (new_p_ud_lst = build_updated_u_data_lst (pf_l u_ids)
                           pf_all_unit_outputs (pf_ud_lst vs) ) as pf_lsd by trivial.
 
-  assert (S (output_age vs) = risky_count (u_status c_s) ) as Hageeqrc.
+  assert (S (output_age vs) = risky_count (u_status prm_unt) ) as Hageeqrc.
   {
-    assert (miscomp_status (u_status (proj1_sig f)) <> not_miscomparing) as Hmis. {
-      intro Nm. unfold c_s_m in h.
-      unfold c_s in h.
+    assert (miscomp_status (u_status prm_unt) <> not_miscomparing) as Hmis. {
+      intro Nm. unfold prm_unt_m in h.
       rewrite h in Nm.
       inversion Nm.
     }
     exact (risky_cnt_age_prop_satisfied_miscomp_or_mayb_case
-             pf_lsd e Hmis hyp).
+             pf_lsd e pf_prm_unt Hmis hyp).
   }
 
   assert ( S (output_age vs) < persistence_lmt ). {
@@ -1497,9 +1482,8 @@ Unshelve.
 
   unfold persistence_lmt. repeat split.
    -- intro.
-      assert (miscomp_status (u_status (proj1_sig f)) <> not_miscomparing) as Hmis. {
-        intro Nm. unfold c_s_m in h.
-        unfold c_s in h.
+      assert (miscomp_status (u_status prm_unt) <> not_miscomparing) as Hmis. {
+        intro Nm. unfold prm_unt_m in h.
         rewrite h in Nm.
         inversion Nm.
       }
@@ -1507,9 +1491,8 @@ Unshelve.
                             pf_all_unit_outputs (pf_ud_lst vs) ) as pf_lsd by trivial.
       unfold risky_cnt_age_prop.
       pose proof  (risky_cnt_age_prop_satisfied_miscomp_or_mayb_case
-                     pf_lsd e Hmis hyp) as Hagerc.
-      fold c_s in Hagerc.
-      pose proof (pf_risky_count (u_status c_s)) as [Hlepc [Hiso_cs1 Hiso_cs2]].
+                     pf_lsd e pf_prm_unt Hmis hyp) as Hagerc.
+      pose proof (pf_risky_count (u_status prm_unt)) as [Hlepc [Hiso_cs1 Hiso_cs2]].
       unfold persistence_lmt in *.
       rewrite Hagerc.
       inversion Hlepc.
@@ -1519,9 +1502,8 @@ Unshelve.
       lia.
    --  intro.
       (* risky_cnt_age_prop pf_new_p_ud_lst : when miscomparing *)
-      assert (miscomp_status (u_status (proj1_sig f)) <> not_miscomparing) as Hmis. {
-        intro Nm. unfold c_s_m in h.
-        unfold c_s in h.
+      assert (miscomp_status (u_status  prm_unt) <> not_miscomparing) as Hmis. {
+        intro Nm. unfold prm_unt_m in h.
         rewrite h in Nm.
         inversion Nm.
       }
@@ -1529,12 +1511,11 @@ Unshelve.
                             pf_all_unit_outputs (pf_ud_lst vs) ) as pf_lsd by trivial.
       unfold risky_cnt_age_prop.
       pose proof  (risky_cnt_age_prop_satisfied_miscomp_or_mayb_case
-                     pf_lsd e Hmis hyp) as Hagerc.
-      fold c_s in Hagerc.
+                     pf_lsd e  pf_prm_unt Hmis hyp) as Hagerc.
       rewrite Hagerc in H.
-      assert (~ risky_count (u_status c_s) <= S persistence_lmt_minus_1)
+      assert (~ risky_count (u_status prm_unt) <= S persistence_lmt_minus_1)
         as Hnot by lia.
-      pose proof (pf_risky_count (u_status c_s)) as [Hlepc [Hiso_cs1 Hiso_cs2]].
+      pose proof (pf_risky_count (u_status prm_unt)) as [Hlepc [Hiso_cs1 Hiso_cs2]].
       unfold persistence_lmt in *.
       contradiction.
    -- intro H. inversion H.
@@ -1549,21 +1530,16 @@ Unshelve.
      unfold get_u_ids_of_unit_data in Hc.
     apply in_map_iff in Hc.
     inversion Hc as [Hca [Hcb Hcc]]. 
-    remember (proj2_sig f).
-    inversion a.
+    inversion  pf_prm_unt.
     unfold get_u_id_of_unit_data in H0.
     rewrite H0 in Hcb.
     unfold new_p_ud_lst in H1.
     unfold isolated_list in Hcc. apply filter_In in Hcc. inversion Hcc.
-    assert (NoDup (get_u_ids_of_unit_data new_p_ud_lst) ) as Hnd. {
-      unfold new_p_ud_lst.
-      rewrite pf_new_p_ud_lst; exact  (pf_l u_ids).
-    }
     
-    pose proof (fun_out_same_means_same_element_of_lst Hca Hcb H2 H1 Hnd).
+    pose proof (fun_out_same_means_same_element_of_lst Hca Hcb H2 H1 
+                  (mapped_list_nodup pf_new_p_ud_lst (pf_l u_ids))).
     unfold negb in H4.
     unfold not_iso_check in H4. 
-    unfold c_s in hyp.
     rewrite H4 in H3.
     pose proof (Helper_lemma_to_reduce_match_term H3 hyp ).
     inversion H5.
@@ -1576,10 +1552,10 @@ Unshelve.
   In (uid (voter_output vs))
     (get_u_ids_of_unit_data (non_isolated_list new_p_ud_lst))*)
   
-  intro. remember (proj2_sig f). inversion a.
+  intro.  inversion  pf_prm_unt.
   rewrite H0.
   apply in_map_iff.
-  exists c_s.
+  exists prm_unt.
   split; trivial.
   apply filter_In.
   split; trivial.
@@ -1591,8 +1567,22 @@ Unshelve.
   assert (new_p_ud_lst = build_updated_u_data_lst (pf_l u_ids)
                         pf_all_unit_outputs (pf_ud_lst vs) ) as pf_lsd by trivial.
   intro.
-    exact (risky_cnt_age_prop_satisfied_bad
-             pf_lsd e  h2 hyp).
+  assert ( prm_unt = proj1_sig
+                       (find_data_of_a_given_unit_id pf_new_p_ud_lst
+                          (uid_of_vs_out_in_uids vs pf_new_p_ud_lst)) ) as Heqprm. {
+    pose proof (proj2_sig
+                  (find_data_of_a_given_unit_id pf_new_p_ud_lst
+                     (uid_of_vs_out_in_uids vs pf_new_p_ud_lst)) ) as [Heqid Hin].
+    inversion pf_prm_unt as [Heqidprm Hinprm].
+    rewrite Heqid in Heqidprm.
+    symmetry in Heqidprm.
+    exact (fun_out_same_means_same_element_of_lst prm_unt Heqidprm Hinprm Hin 
+             (mapped_list_nodup pf_new_p_ud_lst (pf_l u_ids))).
+  }
+  pose proof (risky_cnt_age_prop_satisfied_bad
+             pf_lsd e   pf_prm_unt h2 hyp) as Hreq.
+  rewrite Heqprm in Hreq.
+  exact Hreq.
 
 - (* bad case
     valid <> not_valid ->
@@ -1603,10 +1593,10 @@ Unshelve.
   assert (new_p_ud_lst = build_updated_u_data_lst (pf_l u_ids)
                         pf_all_unit_outputs (pf_ud_lst vs) ) as pf_lsd by trivial.
   
-  assert (S (output_age vs) = risky_count (u_status c_s) ) as Hageeqrc.
+  assert (S (output_age vs) = risky_count (u_status prm_unt) ) as Hageeqrc.
   {
     exact (risky_cnt_age_prop_satisfied_bad
-             pf_lsd e h2 hyp).
+             pf_lsd e pf_prm_unt h2 hyp).
   }
 
   intros.
@@ -1624,9 +1614,8 @@ Unshelve.
                             pf_all_unit_outputs (pf_ud_lst vs) ) as pf_lsd by trivial.
       unfold risky_cnt_age_prop.
       pose proof  ((risky_cnt_age_prop_satisfied_bad
-             pf_lsd e  h2 hyp)) as Hagerc.
-      fold c_s in Hagerc.
-      pose proof (pf_risky_count (u_status c_s)) as [Hlepc [Hiso_cs1 Hiso_cs2]].
+             pf_lsd e  pf_prm_unt h2 hyp)) as Hagerc.
+      pose proof (pf_risky_count (u_status prm_unt)) as [Hlepc [Hiso_cs1 Hiso_cs2]].
       unfold persistence_lmt in *.
       rewrite Hagerc.
       inversion Hlepc.
@@ -1639,38 +1628,36 @@ Unshelve.
                             pf_all_unit_outputs (pf_ud_lst vs) ) as pf_lsd by trivial.
       unfold risky_cnt_age_prop.
       pose proof  (risky_cnt_age_prop_satisfied_bad
-             pf_lsd e  h2 hyp) as Hagerc.
-      fold c_s in Hagerc.
+             pf_lsd e  pf_prm_unt h2 hyp) as Hagerc.
       rewrite Hagerc in H.
-      assert (~ risky_count (u_status c_s) <= S persistence_lmt_minus_1)
+      assert (~ risky_count (u_status prm_unt) <= S persistence_lmt_minus_1)
         as Hnot by lia.
-      pose proof (pf_risky_count (u_status c_s)) as [Hlepc [Hiso_cs1 Hiso_cs2]].
+      pose proof (pf_risky_count (u_status prm_unt)) as [Hlepc [Hiso_cs1 Hiso_cs2]].
       unfold persistence_lmt in *.
       contradiction.
    -- intro H. inversion H.
 -   
   
-(*  In (uid (u_output c_s))
+(*  In (uid (u_output prm_unt))
     (get_u_ids_of_unit_data new_p_ud_lst) *)    
-  remember (proj2_sig f). inversion a.
+  inversion pf_prm_unt.
   unfold get_u_ids_of_unit_data.
-  apply in_map_iff. exists c_s.
+  apply in_map_iff. exists prm_unt.
   split; trivial.
  
   
-- (* u_output c_s = u_output c_s /\ healthy_data c_s *)
+- (* u_output prm_unt = u_output prm_unt /\ healthy_data prm_unt *)
   split; trivial.
   unfold healthy_data.
   repeat split; trivial. 
   
-- (*  0 = 0 <-> valid = valid /\ In c_s new_p_ud_lst *)
-  remember (proj2_sig f).
-  inversion a.
+- (*  0 = 0 <-> valid = valid /\ In prm_unt new_p_ud_lst *)
+  inversion pf_prm_unt.
   repeat split.
   trivial.
 
   
-- (*  pf_validity_prop (u_output c_s) valid new_p_ud_lst *)
+- (*  pf_validity_prop (u_output prm_unt) valid new_p_ud_lst *)
   repeat split.
   -- intro.
      pose proof (Nat.lt_nge (count_of_non_isolated_units new_p_ud_lst) min_required) as [C].
@@ -1680,20 +1667,14 @@ Unshelve.
      unfold get_u_ids_of_unit_data in Hc.
     apply in_map_iff in Hc.
     inversion Hc as [Hca [Hcb Hcc]]. 
-    remember (proj2_sig f).
-    inversion a.
+    inversion pf_prm_unt.
     unfold get_u_id_of_unit_data in H0.
     unfold new_p_ud_lst in H1.
     unfold isolated_list in Hcc. apply filter_In in Hcc. inversion Hcc.
-    assert (NoDup (get_u_ids_of_unit_data new_p_ud_lst) ) as Hnd. {
-      unfold new_p_ud_lst.
-      rewrite pf_new_p_ud_lst; exact  (pf_l u_ids).
-    }
-    
-    pose proof (fun_out_same_means_same_element_of_lst Hca Hcb H2 H1 Hnd).
+    pose proof (fun_out_same_means_same_element_of_lst Hca Hcb H2 H1 
+                  (mapped_list_nodup pf_new_p_ud_lst (pf_l u_ids))).
     unfold negb in H4.
     unfold not_iso_check in H4. 
-    unfold c_s in hyp.
     rewrite H4 in H3.
     pose proof (Helper_lemma_to_reduce_match_term H3 hyp ).
     inversion H5.
@@ -1702,12 +1683,12 @@ Unshelve.
   -- inversion H.
   -- intro; inversion H.   
 - (*  valid = valid ->
-  In (uid (u_output c_s))
+  In (uid (u_output prm_unt))
     (get_u_ids_of_unit_data (non_isolated_list new_p_ud_lst)) *)
   intro.
-  remember (proj2_sig f); inversion a.
+  inversion pf_prm_unt.
   apply in_map_iff.
-  exists c_s.
+  exists prm_unt.
   split; trivial.
   apply filter_In.
   split; trivial.
@@ -1717,35 +1698,30 @@ Unshelve.
 -  (*  risky_cnt_age_prop  healthy case *)
   unfold risky_cnt_age_prop. intro.
   remember ((find_data_of_a_given_unit_id pf_new_p_ud_lst
-              match proj2_sig f with
+              match pf_prm_unt with
               | conj _ H1 =>
                   match
                     in_map_iff (fun a : unit_data => uid (u_output a)) new_p_ud_lst
-                      (uid (u_output c_s))
+                      (uid (u_output prm_unt))
                   with
                   | conj _ H3 => H3
                   end
                     (ex_intro
                        (fun x : unit_data =>
-                          uid (u_output x) = uid (u_output c_s) /\
-                            In x new_p_ud_lst) c_s (conj eq_refl H1))
+                          uid (u_output x) = uid (u_output prm_unt) /\
+                            In x new_p_ud_lst) prm_unt (conj eq_refl H1))
               end)) as f_s.
   remember (proj1_sig f_s) as s.
   remember (proj2_sig f_s) as fs.
   inversion fs as  [Hsuid Hsin].
-  assert ( c_s = s ). {
-    remember (proj2_sig f) as Prj2_f.
-    inversion Prj2_f as [Hcsuid Hcsin].
+  assert ( prm_unt = s ). {
+    inversion pf_prm_unt as [Hcsuid Hcsin].
     rewrite <- Heqs in Hsuid, Hsin.
-    assert (NoDup (get_u_ids_of_unit_data new_p_ud_lst) ) as Hnd. {
-      unfold new_p_ud_lst.
-      rewrite pf_new_p_ud_lst; exact  (pf_l u_ids).
-    }
-    
-    exact ( fun_out_same_means_same_element_of_lst c_s Hsuid Hcsin Hsin Hnd).
+    exact ( fun_out_same_means_same_element_of_lst prm_unt Hsuid Hcsin Hsin 
+              (mapped_list_nodup pf_new_p_ud_lst (pf_l u_ids))).
   }        
-  pose proof (pf_healthy c_s) as [PFh1 PFh2].
-  assert (healthy_data c_s).
+  pose proof (pf_healthy prm_unt) as [PFh1 PFh2].
+  assert (healthy_data prm_unt).
   unfold healthy_data.
   repeat split; trivial.
   rewrite Heqf_s in Heqs.
@@ -1774,22 +1750,16 @@ Unshelve.
   -- intro. inversion H as  [Hb Hc].
      unfold get_u_ids_of_unit_data in Hc.
     apply in_map_iff in Hc.
-    inversion Hc as [Hca [Hcb Hcc]]. 
-    remember (proj2_sig f).
-    inversion a.
+    inversion Hc as [Hca [Hcb Hcc]].
+    inversion pf_prm_unt.
     unfold get_u_id_of_unit_data in H0.
     rewrite H0 in Hcb.
     unfold new_p_ud_lst in H1.
     unfold isolated_list in Hcc. apply filter_In in Hcc. inversion Hcc.
-    assert (NoDup (get_u_ids_of_unit_data new_p_ud_lst) ) as Hnd. {
-      unfold new_p_ud_lst.
-      rewrite pf_new_p_ud_lst; exact  (pf_l u_ids).
-    }
-    
-    pose proof (fun_out_same_means_same_element_of_lst Hca Hcb H2 H1 Hnd).
+    pose proof (fun_out_same_means_same_element_of_lst Hca Hcb H2 H1 
+                  (mapped_list_nodup pf_new_p_ud_lst (pf_l u_ids))).
     unfold negb in H4.
     unfold not_iso_check in H4. 
-    unfold c_s in hyp.
     rewrite H4 in H3.
     pose proof (Helper_lemma_to_reduce_match_term H3 hyp ).
     inversion H5.
@@ -1802,10 +1772,10 @@ Unshelve.
   In (uid (voter_output vs))
     (get_u_ids_of_unit_data (non_isolated_list new_p_ud_lst))*)
   
-  intro. remember (proj2_sig f). inversion a.
+  intro. inversion pf_prm_unt.
   rewrite H0.
   apply in_map_iff.
-  exists c_s.
+  exists prm_unt.
   split; trivial.
   apply filter_In.
   split; trivial.
@@ -1817,15 +1787,27 @@ Unshelve.
    assert (new_p_ud_lst = build_updated_u_data_lst (pf_l u_ids)
                           pf_all_unit_outputs (pf_ud_lst vs) ) as pf_lsd by trivial.
    intro.
-   assert (miscomp_status (u_status (proj1_sig f)) <> not_miscomparing) as Hmis. {
-     intro Nm. unfold c_s_m in h.
-     unfold c_s in h.
+   assert (miscomp_status (u_status prm_unt) <> not_miscomparing) as Hmis. {
+     intro Nm. unfold prm_unt_m in h.
      rewrite h in Nm.
      inversion Nm.
    }
-   exact (risky_cnt_age_prop_satisfied_miscomp_or_mayb_case
-            pf_lsd e Hmis hyp).
-
+   assert ( prm_unt = proj1_sig
+                        (find_data_of_a_given_unit_id pf_new_p_ud_lst
+                           (uid_of_vs_out_in_uids vs pf_new_p_ud_lst)) ) as Heqprm. {
+     pose proof (proj2_sig
+                   (find_data_of_a_given_unit_id pf_new_p_ud_lst
+                      (uid_of_vs_out_in_uids vs pf_new_p_ud_lst)) ) as [Heqid Hin].
+     inversion pf_prm_unt as [Heqidprm Hinprm].
+     rewrite Heqid in Heqidprm.
+     symmetry in Heqidprm.
+     exact (fun_out_same_means_same_element_of_lst prm_unt Heqidprm Hinprm Hin 
+              (mapped_list_nodup pf_new_p_ud_lst (pf_l u_ids))).
+   }
+   pose proof (risky_cnt_age_prop_satisfied_miscomp_or_mayb_case
+                 pf_lsd e  pf_prm_unt Hmis hyp) as Hreq.
+   rewrite Heqprm in Hreq.
+   exact Hreq.
 -
   (* maybe_miscomparing case 
   valid <> not_valid ->
@@ -1836,16 +1818,15 @@ Unshelve.
   assert (new_p_ud_lst = build_updated_u_data_lst (pf_l u_ids)
                         pf_all_unit_outputs (pf_ud_lst vs) ) as pf_lsd by trivial.
   
-  assert (S (output_age vs) = risky_count (u_status c_s) ) as Hageeqrc.
+  assert (S (output_age vs) = risky_count (u_status prm_unt) ) as Hageeqrc.
   {
-    assert (miscomp_status (u_status (proj1_sig f)) <> not_miscomparing) as Hmis. {
-      intro Nm. unfold c_s_m in h.
-      unfold c_s in h.
+    assert (miscomp_status (u_status prm_unt) <> not_miscomparing) as Hmis. {
+      intro Nm. unfold prm_unt_m in h.
       rewrite h in Nm.
       inversion Nm.
     }
     exact (risky_cnt_age_prop_satisfied_miscomp_or_mayb_case
-             pf_lsd e Hmis hyp).
+             pf_lsd e pf_prm_unt Hmis hyp).
   }
   
   assert ( S (output_age vs) < persistence_lmt ). {
@@ -1859,9 +1840,8 @@ Unshelve.
 
   unfold persistence_lmt. repeat split.
    -- intro.
-      assert (miscomp_status (u_status (proj1_sig f)) <> not_miscomparing) as Hmis. {
-        intro Nm. unfold c_s_m in h.
-        unfold c_s in h.
+      assert (miscomp_status (u_status prm_unt) <> not_miscomparing) as Hmis. {
+        intro Nm. unfold prm_unt_m in h.
         rewrite h in Nm.
         inversion Nm.
       }
@@ -1869,9 +1849,8 @@ Unshelve.
                             pf_all_unit_outputs (pf_ud_lst vs) ) as pf_lsd by trivial.
       unfold risky_cnt_age_prop.
       pose proof  (risky_cnt_age_prop_satisfied_miscomp_or_mayb_case
-                     pf_lsd e Hmis hyp) as Hagerc.
-      fold c_s in Hagerc.
-      pose proof (pf_risky_count (u_status c_s)) as [Hlepc [Hiso_cs1 Hiso_cs2]].
+                     pf_lsd e pf_prm_unt Hmis hyp) as Hagerc.
+      pose proof (pf_risky_count (u_status prm_unt)) as [Hlepc [Hiso_cs1 Hiso_cs2]].
       unfold persistence_lmt in *.
       rewrite Hagerc.
       inversion Hlepc.
@@ -1881,9 +1860,8 @@ Unshelve.
       lia.
    --  intro.
       (* risky_cnt_age_prop pf_new_p_ud_lst : when miscomparing *)
-      assert (miscomp_status (u_status (proj1_sig f)) <> not_miscomparing) as Hmis. {
-        intro Nm. unfold c_s_m in h.
-        unfold c_s in h.
+      assert (miscomp_status (u_status prm_unt) <> not_miscomparing) as Hmis. {
+        intro Nm. unfold prm_unt_m in h.
         rewrite h in Nm.
         inversion Nm.
       }
@@ -1891,12 +1869,11 @@ Unshelve.
                             pf_all_unit_outputs (pf_ud_lst vs) ) as pf_lsd by trivial.
       unfold risky_cnt_age_prop.
       pose proof  (risky_cnt_age_prop_satisfied_miscomp_or_mayb_case
-                     pf_lsd e Hmis hyp) as Hagerc.
-      fold c_s in Hagerc.
+                     pf_lsd e pf_prm_unt Hmis hyp) as Hagerc.
       rewrite Hagerc in H.
-      assert (~ risky_count (u_status c_s) <= S persistence_lmt_minus_1)
+      assert (~ risky_count (u_status prm_unt) <= S persistence_lmt_minus_1)
         as Hnot by lia.
-      pose proof (pf_risky_count (u_status c_s)) as [Hlepc [Hiso_cs1 Hiso_cs2]].
+      pose proof (pf_risky_count (u_status prm_unt)) as [Hlepc [Hiso_cs1 Hiso_cs2]].
       unfold persistence_lmt in *.
       contradiction.
    -- intro H. inversion H.
@@ -1981,11 +1958,8 @@ Proof.
       assert ( y =  y2 ) as Heqy2y. {
         rewrite <- Huidx in Huidy2.
         rewrite <- Hyequid in Huidy2.
-     
-        assert (NoDup (get_u_ids_of_unit_data (u_data_lst vs)) ) as Hnd. {
-          rewrite (pf_ud_lst vs); exact  (pf_l u_ids).
-        }
-        exact (fun_out_same_means_same_element_of_lst y Huidy2 Hyin Hy2in Hnd ).
+        exact (fun_out_same_means_same_element_of_lst y Huidy2 Hyin Hy2in 
+                 (mapped_list_nodup (pf_ud_lst vs) (pf_l u_ids)) ).
       }
       rewrite <- Heqy2y in *.
       assert (iso_status (u_status y) = not_isolated ). {

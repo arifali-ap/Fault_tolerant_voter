@@ -97,12 +97,9 @@ Definition build_prime_switched_vs
     unfold isolated_list in H2In.
     apply filter_In in H2In.
     inversion H2In as [H2xIn H2xIso].
-    assert (NoDup (get_u_ids_of_unit_data new_p_ud_lst) ) as Hnd. {
-         rewrite pf_new_p_ud_lst; exact  (pf_l u_ids).
-    }
-       
-    pose proof (fun_out_same_means_same_element_of_lst
-                   H2x H2uid H2xIn OHCin Hnd).
+    pose proof (fun_out_same_means_same_element_of_lst H2x H2uid H2xIn OHCin
+                  (mapped_list_nodup pf_new_p_ud_lst (pf_l u_ids))
+).
     rewrite H3 in H2xIso.
     unfold healthy_data in OHchd. inversion OHchd as [hl1 [hl2 hl3]].
     unfold not_iso_check in H2xIso.
@@ -163,10 +160,8 @@ Definition build_prime_switched_vs
       inversion H3.
       trivial.
     }
-    assert (NoDup (get_u_ids_of_unit_data new_p_ud_lst) ) as Hnd. {
-         rewrite pf_new_p_ud_lst; exact  (pf_l u_ids).
-    }
-    pose proof (fun_out_same_means_same_element_of_lst x H0 H3 H2 Hnd ).
+    pose proof (fun_out_same_means_same_element_of_lst x H0 H3 H2 
+                  (mapped_list_nodup pf_new_p_ud_lst (pf_l u_ids)) ).
     inversion H1 as [H5 H6]. 
     assert ( healthy_data x).
     { assert ( In x (healthy_unit_list new_p_ud_lst) ) as H7.

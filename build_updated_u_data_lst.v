@@ -86,36 +86,6 @@ Qed.
 
 
 
-
-
-Definition build_single_u_data_prop1
-  (x : unit_output * unit_data)
-  (new : unit_data)
-  (dev_lst mayb_lst: list unit_id )
-  :=
-  (risky_cnt_prop (snd x) new )
-  /\ (u_output new) = (fst x)
-  /\ (iso_status (snd x).(u_status) = isolated -> iso_status new.(u_status) = isolated)
-  /\ (iso_status (new).(u_status) = not_isolated -> iso_status (snd x).(u_status) = not_isolated)
-  /\ (iso_status (snd x).(u_status) = not_isolated ->
-     (
-       miscomp_status (u_status new) = miscomparing <->
-         (In (uid (fst x) ) dev_lst)
-         /\ ( ~ In (uid (fst x) ) mayb_lst)
-         /\ ( hw_hlth (reading (fst x)) = good) ) 
-     /\ (
-         miscomp_status (u_status new) = maybe_miscomparing
-         <->
-           ( ~ In (uid (fst x) ) dev_lst)
-           /\ ( In (uid (fst x) ) mayb_lst)
-           /\ ( hw_hlth (reading (fst x)) = good) )
-    ).
-
-
-
-
-
-
 Definition build_single_u_data_prop
   (x : unit_output * unit_data)
   (new : unit_data)
@@ -533,14 +503,16 @@ Definition update_u_data_frm_comb_elmnt
   match stat as ISO return
         stat = ISO -> { sd : unit_data | build_single_u_data_prop x sd dev_lst maybe_lst }  with
   | isolated     => fun hyp => exist _ (unit_data_build (fst x) (u_status (snd x)) _ ) _
-  | not_isolated => fun hyp => exist _ (proj1_sig (update_u_data_frm_comb_elmnt_not_isoltd
-                                 x
-                                 dev_lst
-                                 maybe_lst
-                                 hyp )) _
+  | not_isolated => fun hyp => let (uniso, pf_uniso) :=
+                                 (update_u_data_frm_comb_elmnt_not_isoltd
+                                    x
+                                    dev_lst
+                                    maybe_lst
+                                    hyp ) in
+                               exist _ uniso pf_uniso
   end eq_refl).
   Unshelve.
-  3: {  
+  2: {  
     pose proof (pf_risky_count (u_status (snd x) )).
     inversion H as [H1 [H2 H3]].
     pose proof (H3 hyp).
@@ -564,7 +536,6 @@ Definition update_u_data_frm_comb_elmnt
     -- intros. unfold stat in hyp. simpl in *. rewrite hyp in H. inversion H.
     -- intros. unfold stat in hyp. simpl in *. rewrite hyp in H. inversion H.
     -- intros. unfold stat in hyp. simpl in *. rewrite hyp in H. inversion H.
-  - exact (proj2_sig (update_u_data_frm_comb_elmnt_not_isoltd x dev_lst maybe_lst hyp)).
 Defined.  
 
 Definition update_u_data_frm_comb_elmnt_for_map
@@ -955,12 +926,12 @@ Lemma once_isolated_remain_isolated_after_build_updated_u_data_lst_helper
        simpl in *.
        rewrite <- B2 in H4.
        rewrite <- H6 in H4.
-       assert (NoDup (get_u_ids_of_unit_data new) ).
-       {
-         unfold new.
-         pose proof (build_updated_u_data_lst_preserves_uids pf_uids pf_input pf_ud_lst).
-         rewrite H7; trivial. }
-       exact (fun_out_same_means_same_element_of_lst (proj1_sig s) H4 H2 H5 H7).
+       
+       pose proof (build_updated_u_data_lst_preserves_uids pf_uids pf_input pf_ud_lst)
+         as Huid.
+         
+       exact (fun_out_same_means_same_element_of_lst (proj1_sig s) H4 H2 H5
+             (mapped_list_nodup Huid pf_uids)).
      -- 
        pose proof (combine_lists_gen_props pf_uids pf_input pf_ud_lst (z,x))
        as [Hc1 Hc2].
@@ -1003,11 +974,9 @@ Lemma once_isolated_remain_isolated_after_build_updated_u_data_lst_helper
                             apply filter_In in H.
                             inversion H; trivial.
      }
-     rewrite Hx0uid in H4.
-     assert ( NoDup (get_u_ids_of_unit_data ud_lst) ) as Hnd. {
-       rewrite  pf_ud_lst; auto.
-     }       
-     pose proof (fun_out_same_means_same_element_of_lst (snd x0) H4 Hx0ud_lst H8 Hnd).
+     rewrite Hx0uid in H4.       
+     pose proof (fun_out_same_means_same_element_of_lst (snd x0) H4 Hx0ud_lst H8
+                   (mapped_list_nodup pf_ud_lst pf_uids)).
      rewrite H9 in B3a.
      unfold not_iso_check; unfold negb.
      pose proof (B3a H2).
@@ -1064,7 +1033,8 @@ Lemma once_isolated_remain_isolated_after_build_updated_u_data_lst {u_ids : list
     rewrite length_map in H4.
     trivial.
   }
-  assert (NoDup (get_u_ids_of_unit_output input)). rewrite pf_input; trivial.
+  
+  pose proof (mapped_list_nodup pf_input pf_uids).
   pose proof (combine_lists_gen_props pf_uids pf_input pf_ud_lst zy).
   unfold combine_lists in H6.
   inversion H6.
@@ -1138,11 +1108,8 @@ Lemma not_isolated_after_update_implies_not_isolated_before
       inversion Hxdin.
       inversion Hx0in.
       rewrite <- Hx0uid in Hxdeqx.
-      assert (NoDup (get_u_ids_of_unit_data new) ) as Hnd. {
-        rewrite pf_new_uids; auto.
-      }
       pose proof  (fun_out_same_means_same_element_of_lst xd
-                     Hxdeqx H3 H5 Hnd).
+                     Hxdeqx H3 H5  (mapped_list_nodup pf_new_uids pf_uids)).
       symmetry.
       trivial.
     }
@@ -1310,10 +1277,8 @@ Lemma build_updated_u_data_lst_holds_risky_cnt_prop
   rewrite H5 in H4.
   rewrite <- H4 in Hx0uid.
   rewrite <- H1 in Hx0uid.
-   assert (NoDup (get_u_ids_of_unit_data ud_lst) ) as Hnd. {
-        rewrite pf_ud_lst; auto.
-      }
-  pose proof (fun_out_same_means_same_element_of_lst x Hx0uid H Hx0ud_lst Hnd).
+  pose proof (fun_out_same_means_same_element_of_lst x Hx0uid H Hx0ud_lst 
+                (mapped_list_nodup pf_ud_lst pf_uids) ).
   rewrite <- H5.
   rewrite H7.
   trivial.
@@ -1362,17 +1327,13 @@ Proof.
   rewrite Hb2 in Huidxy.
   assert ( fst zx = z ). {
     rewrite Huidxy in Huidxz.
-     assert (NoDup (get_u_ids_of_unit_output input) ) as Hnd. {
-        rewrite pf_input; auto.
-      }
-    exact (fun_out_same_means_same_element_of_lst (fst zx) Huidxz H2input Hzin Hnd).
+    exact (fun_out_same_means_same_element_of_lst (fst zx) Huidxz H2input Hzin
+             (mapped_list_nodup pf_input pf_uids) ).
   }
   assert ( x = snd zx ). {
     rewrite H2uid in Huidxy.
-     assert (NoDup (get_u_ids_of_unit_data ud_lst) ) as Hnd. {
-        rewrite pf_ud_lst; auto.
-      }
-    exact (fun_out_same_means_same_element_of_lst x Huidxy Hxin H2ud_lst Hnd).
+    exact (fun_out_same_means_same_element_of_lst x Huidxy Hxin H2ud_lst
+             (mapped_list_nodup pf_ud_lst pf_uids) ).
   }
   rewrite <- H0 in *.
   rewrite H in *.
@@ -1405,11 +1366,8 @@ Proof.
     pose proof (Habprop Habincomp) as [Hauidb [Hainput Hbud_lst]].
     clear Habin Habincomp temp Habprop H0.
     rewrite <- Habuid in *.
-    assert (NoDup (get_u_ids_of_unit_output input) ) as Hnd. {
-      rewrite pf_input; auto.
-    }
-    
-    exact ( fun_out_same_means_same_element_of_lst (fst ab) Hduid  Hainput Hzin Hnd).
+    exact ( fun_out_same_means_same_element_of_lst (fst ab) Hduid  Hainput Hzin
+              (mapped_list_nodup pf_input pf_uids)).
   }
   rewrite H1 in H0.
   trivial.
@@ -1459,18 +1417,13 @@ Lemma build_updated_u_data_lst_holds_cmpltnss_a_prop_of_miscomp_check
   rewrite Hb2 in Huidxy.
   assert ( fst zx = z ). {
     rewrite Huidxy in Huidxz.
-    assert (NoDup (get_u_ids_of_unit_output input) ) as Hnd. {
-      rewrite pf_input; auto.
-    }
-    exact (fun_out_same_means_same_element_of_lst (fst zx) Huidxz  Hinput Hinz Hnd).
+    exact (fun_out_same_means_same_element_of_lst (fst zx) Huidxz  Hinput Hinz
+             (mapped_list_nodup pf_input pf_uids)).
   }
   assert ( x = snd zx ). {
     rewrite Hzuidx in Huidxy.
-    assert (NoDup (get_u_ids_of_unit_data ud_lst) ) as Hnd. {
-      rewrite pf_ud_lst; auto.
-    }
-    
-    exact (fun_out_same_means_same_element_of_lst x Huidxy Hinx Hud_lst Hnd).
+    exact (fun_out_same_means_same_element_of_lst x Huidxy Hinx Hud_lst
+              (mapped_list_nodup pf_ud_lst pf_uids) ).
   }
   rewrite <- H1 in *.
   rewrite H0 in *.
@@ -1520,7 +1473,7 @@ Lemma build_updated_u_data_lst_holds_soundness_b_prop_of_miscomp_check
 
   :
  
-  let  l := proj1_sig (all_good_non_iso_lst pf_uids pf_input pf_ud_lst) in
+  let  (l, pf_l) := all_good_non_iso_lst pf_uids pf_input pf_ud_lst in
   let mis_flt_lmt := flt_lmt_among_good pf_uids pf_input pf_ud_lst in
   length (dlta_dev_lst_grnd_truth l ) <= mis_flt_lmt
   -> let new := build_updated_u_data_lst  pf_uids  pf_input pf_ud_lst in
@@ -1534,7 +1487,7 @@ Lemma build_updated_u_data_lst_holds_soundness_b_prop_of_miscomp_check
                        -> iso_status (u_status x) = not_isolated
                        -> y.(u_status).(miscomp_status) = not_miscomparing
                        -> adiff ground_truth z.(reading).(val) <= 3*delta.
-Proof.
+Proof. 
   unfold build_updated_u_data_lst.  
   intros Hypo x Hxin y Hyin z Hzinl Huidxy Huidxz Hiso Hmis.  
   unfold update_u_data_frm_comb_elmnt_for_map in Hyin.
@@ -1552,26 +1505,20 @@ Proof.
   inversion H2 as [H2uid [H2input H2ud_lst]].
   clear H H0 H1 H2.
   rewrite Ha in Hb2.
-  rewrite Hb2 in Huidxy.
-  
-  unfold l in Hzinl.
+  rewrite Hb2 in Huidxy. 
   pose proof (proj2_sig (all_good_non_iso_lst pf_uids pf_input pf_ud_lst)).
   rewrite Forall_forall in H.
   pose proof (H z Hzinl) as [Hzin[T Hzgd]].
   
   assert ( fst zx = z ). {
     rewrite Huidxy in Huidxz.
-    assert (NoDup (get_u_ids_of_unit_output input) ) as Hnd. {
-      rewrite pf_input; auto.
-    }
-    exact (fun_out_same_means_same_element_of_lst (fst zx) Huidxz H2input Hzin Hnd).
+    exact (fun_out_same_means_same_element_of_lst (fst zx) Huidxz H2input Hzin
+             (mapped_list_nodup pf_input pf_uids)).
   }
   assert ( x = snd zx ). {
     rewrite H2uid in Huidxy.
-    assert (NoDup (get_u_ids_of_unit_data ud_lst) ) as Hnd. {
-      rewrite pf_ud_lst; auto.
-    }
-    exact (fun_out_same_means_same_element_of_lst x Huidxy Hxin H2ud_lst Hnd).
+    exact (fun_out_same_means_same_element_of_lst x Huidxy Hxin H2ud_lst
+             (mapped_list_nodup pf_ud_lst pf_uids)).
   } 
   rewrite H0 in *.
   rewrite <- H1 in *.
@@ -1592,7 +1539,7 @@ Proof.
     rewrite H3 in Hmis.
     inversion Hmis.
   }
-  clear Hb5 Hmis1 Hmis2 Hmb1 Hmb2 Hb3 Hb4 Hb1 Hnin Hin.
+  clear Hb5 Hmis1 Hmis2 Hmb1 Hmb2 Hb3 Hb4 Hb1 Hnin Hin. 
 
   pose proof (miscomparing_mayb_and_not_lists_are_disjoint
                 pf_uids pf_input pf_ud_lst z Hzinl) as [[T1 T2][[T5 T6][T3 HinNt]]].
@@ -1714,11 +1661,8 @@ Proof.
   
   assert (x = snd zx ). {
     rewrite Hzxuid in Huidxy.
-    assert (NoDup (get_u_ids_of_unit_data ud_lst) ) as Hnd. {
-      rewrite pf_ud_lst; auto.
-    }
     exact (fun_out_same_means_same_element_of_lst
-             x Huidxy Hxin Hzxud_lst Hnd).
+             x Huidxy Hxin Hzxud_lst (mapped_list_nodup pf_ud_lst pf_uids)).
   }
   rewrite <- H0 in Hb5.
   rewrite Huidxy in Huidxz.
@@ -1775,10 +1719,8 @@ Proof.
   rewrite Hb2 in Huidxy.
   assert ( x = snd zx ). {
     rewrite Hzuidx in Huidxy.
-    assert (NoDup (get_u_ids_of_unit_data ud_lst) ) as Hnd. {
-      rewrite pf_ud_lst; auto.
-    }
-    exact (fun_out_same_means_same_element_of_lst x Huidxy Hxin Hud_lst Hnd).
+    exact (fun_out_same_means_same_element_of_lst x Huidxy Hxin Hud_lst
+             (mapped_list_nodup pf_ud_lst pf_uids)).
   }
   
   rewrite <- H0 in *.
@@ -1870,10 +1812,8 @@ Proof.
       rewrite <- Hb2.
       exact H.
     }
-    assert (NoDup (get_u_ids_of_unit_output input) ) as Hnd. {
-      rewrite pf_input; auto.
-    }
-    exact (fun_out_same_means_same_element_of_lst p H0 Hpinput Hainput Hnd).
+    exact (fun_out_same_means_same_element_of_lst p H0 Hpinput Hainput
+           (mapped_list_nodup pf_input pf_uids)).
   }
   rewrite <- H0 in *.
 
@@ -1884,10 +1824,8 @@ Proof.
       rewrite Hpqfst.
       trivial.
     }
-    assert (NoDup (get_u_ids_of_unit_data ud_lst) ) as Hnd. {
-      rewrite pf_ud_lst; auto.
-    }
-    exact (fun_out_same_means_same_element_of_lst (snd ab) H1 Hbud_lst Hqinud_lst Hnd).
+    exact (fun_out_same_means_same_element_of_lst (snd ab) H1 Hbud_lst Hqinud_lst
+             (mapped_list_nodup pf_ud_lst pf_uids)).
   }
   rewrite <- H1 in *.
   pose proof (Hb5 (nisoc_t_not_isltd Hqiso))
@@ -2051,11 +1989,9 @@ Proof.
           rewrite Hx0uid in Huidfs.
           rewrite <- Huidfs. trivial.
         }
-        assert (NoDup (get_u_ids_of_unit_data ud_lst) ) as Hnd. {
-          rewrite pf_ud_lst; auto.
-        }
         assert (snd x1 = x)                 
-          by exact (fun_out_same_means_same_element_of_lst (snd x1) H5 Hsin Hxin Hnd).
+          by exact (fun_out_same_means_same_element_of_lst (snd x1) H5 Hsin Hxin
+                      (mapped_list_nodup pf_ud_lst pf_uids)).
         rewrite <- H6; trivial.
       }         
       unfold miscomparing_and_prev_non_isoltd_check_for_comb_data.
@@ -2087,11 +2023,9 @@ Proof.
             rewrite <- Hyeqfx2 in Hx2fs.
             rewrite Hyuid. trivial.
           }
-          assert (NoDup (get_u_ids_of_unit_data ud_lst) ) as Hnd. {
-            rewrite pf_ud_lst; auto.
-          }
           assert ( x = snd x2)
-            by exact (fun_out_same_means_same_element_of_lst x H6 Hxin Hx2sin Hnd).
+            by exact (fun_out_same_means_same_element_of_lst x H6 Hxin Hx2sin
+                        (mapped_list_nodup pf_ud_lst pf_uids)).
           rewrite H7 in Hisox.
           exact (nisoc_t_not_isltd Hisox).
         }
@@ -2107,11 +2041,8 @@ Proof.
           { rewrite Hfst in Hfin.
             rewrite Hyuid in Hx0uid.
             rewrite <- Hyeqfx2 in Hx2fin.
-            
-            assert (NoDup (get_u_ids_of_unit_output input) ) as Hnd. {
-              rewrite pf_input; auto.
-            }
-            exact (fun_out_same_means_same_element_of_lst x0 Hx0uid Hfin Hx2fin Hnd).
+            exact (fun_out_same_means_same_element_of_lst x0 Hx0uid Hfin Hx2fin
+                     (mapped_list_nodup pf_input pf_uids)).
           }
           rewrite <- H5.
           unfold hw_good_unit_check in Hgd.
@@ -2189,10 +2120,8 @@ Proof.
         clear T Hcl H2 T2 T3.
         rewrite Teqfxy in Hx0uids.
         rewrite Hxyequid in Hx0uids.
-        assert (NoDup (get_u_ids_of_unit_data ud_lst) ) as Hnd. {
-          rewrite pf_ud_lst; auto.
-        }
-        exact (fun_out_same_means_same_element_of_lst (fst x0) Hx0uids Hx0fin Hyin Hnd).
+        exact (fun_out_same_means_same_element_of_lst (fst x0) Hx0uids Hx0fin Hyin
+                 (mapped_list_nodup pf_ud_lst pf_uids)).
       }
       rewrite Heqsxyfx0 in Hiso. 
       pose proof (Tmis Hiso) as [Hmis1]. 
@@ -2372,10 +2301,8 @@ Proof.
           clear Hcl1 Hcl2.
           rewrite <- Hyeqp in Huidpeqq.
           rewrite <- Huidxeqy in Huidpeqq.
-          assert (NoDup (get_u_ids_of_unit_data ud_lst) ) as Hnd. {
-            rewrite pf_ud_lst; auto.
-          }
-          exact (fun_out_same_means_same_element_of_lst (fst xy) Huidpeqq Hxin Hqin Hnd).
+          exact (fun_out_same_means_same_element_of_lst (fst xy) Huidpeqq Hxin Hqin
+              (mapped_list_nodup pf_ud_lst pf_uids)).
         }
         rewrite Hxeqp in Hisoxprop.
         exact (nisoc_t_not_isltd Hisoxprop).
@@ -2408,13 +2335,12 @@ Proof.
   {
     assert (NoDup newly_isoltd ) as Hnd. {
       unfold newly_isoltd.
-      assert (NoDup (map (fun y : unit_data * unit_data => snd y) comb_data) ) as Hndsnd. {
+      assert (NoDup (map (fun y : unit_data * unit_data => snd y) comb_data) )
+        as Hndsnd. {
         unfold comb_data.
         rewrite (second_of_combine_lists_is_l2 pf_uids pf_ud_lst pf_new_q).
-        assert (NoDup (get_u_ids_of_unit_data new_q )) as Hnduid. {
-          unfold new_q.
-          rewrite pf_new_q. trivial.
-        }
+        
+        pose proof  (mapped_list_nodup pf_new_q pf_uids) as Hnduid. 
         apply NoDup_map_inv in Hnduid.
         trivial.
       }
@@ -2460,10 +2386,8 @@ Proof.
         clear T.
         pose proof (Hpqgp Hpqin) as [Huideqpq [Hpin Hqin]].
         rewrite <- Hfxuideqsx in Huideqpq.
-        assert (NoDup (get_u_ids_of_unit_data ud_lst) ) as Hnd. {
-          rewrite pf_ud_lst; auto.
-        }
-        exact (fun_out_same_means_same_element_of_lst (fst x) Huideqpq Hfxin Hqin Hnd).
+        exact (fun_out_same_means_same_element_of_lst (fst x) Huideqpq Hfxin Hqin 
+                 (mapped_list_nodup pf_ud_lst pf_uids)).
       }
       rewrite Heqfxq in Hisofx.
       exact (nisoc_t_not_isltd Hisofx).
@@ -2676,11 +2600,8 @@ Proof.
            assert ( a = b). {
              assert (In a (a::new_q) ) by apply in_eq.
              rewrite <- Huid in H6.
-             assert (NoDup (get_u_ids_of_unit_data (a::new_q)) ) as Hnd. {
-               rewrite pf_new_q; auto.
-             }
              exact (fun_out_same_means_same_element_of_lst
-                     a H6 H11 Hbinnew Hnd).
+                     a H6 H11 Hbinnew  (mapped_list_nodup pf_new_q pf_uids)).
            }
            rewrite H11 in Hisoa.
            rewrite Hisoa in Hbisoprop.
@@ -3045,11 +2966,8 @@ Proof.
   
   assert (x = snd zx ) as Hxeqx. {
     rewrite Hzxuid in Huidxy.
-    assert (NoDup (get_u_ids_of_unit_data ud_lst) ) as Hnd. {
-      rewrite pf_ud_lst; auto.
-    }
     exact (fun_out_same_means_same_element_of_lst
-             x Huidxy Hxin Hzxud_lst Hnd).
+             x Huidxy Hxin Hzxud_lst  (mapped_list_nodup pf_ud_lst pf_uids)).
   }
   rewrite <- Hxeqx in Hb5.
   rewrite Huidxy in Huidxz.
@@ -3099,10 +3017,8 @@ Proof.
         rewrite <- Hfxeqz.
         trivial.
       }
-      assert (NoDup (get_u_ids_of_unit_output input) ) as Hnd. {
-        rewrite pf_input; auto.
-      }
-      exact (fun_out_same_means_same_element_of_lst (u_output y) Huidxz Hzxinput HzinIP Hnd).
+      exact (fun_out_same_means_same_element_of_lst (u_output y) Huidxz Hzxinput HzinIP 
+               (mapped_list_nodup pf_input pf_uids)).
     }
     rewrite Heqzyout.
     unfold hw_good_unit_check in Hzgdprop.
@@ -3236,11 +3152,8 @@ Proof.
   
   assert (x = snd zx ) as Hxeqx. {
     rewrite Hzxuid in Huidxy.
-    assert (NoDup (get_u_ids_of_unit_data ud_lst) ) as Hnd. {
-      rewrite pf_ud_lst; auto.
-    }
     exact (fun_out_same_means_same_element_of_lst
-             x Huidxy Hxin Hzxud_lst Hnd).
+             x Huidxy Hxin Hzxud_lst  (mapped_list_nodup pf_ud_lst pf_uids)).
   }
   rewrite <- Hxeqx in Hb5.
   rewrite Huidxy in Huidxz.
