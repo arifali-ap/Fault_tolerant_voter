@@ -66,14 +66,10 @@ Proof.
                  (combine input ud_lst))). 
 
   assert ( (filter g l)
-           = filter (fun y : unit_output => f y && g y) l0 ).
-  { unfold l. 
-    unfold all_good_non_iso_lst.
-    unfold combine_lists.
+           = filter (fun y : unit_output => f y && g y) l0 ). {
+    unfold l, all_good_non_iso_lst, combine_lists, non_isltd_comb_lst.
     simpl.
-    unfold non_isltd_comb_lst.
-    rewrite <- Heqf.
-    rewrite <- Heql0.
+    rewrite <- Heqf,  <- Heql0.
     pose proof ( filter_andb_eq_filter_on_filter l0 f g).
     rewrite H0 in H.
     symmetry. trivial.
@@ -93,8 +89,10 @@ Definition build_single_u_data_prop
   :=
   (risky_cnt_prop (snd x) new )
   /\ (u_output new) = (fst x)
-  /\ (iso_status (snd x).(u_status) = isolated -> iso_status new.(u_status) = isolated)
-  /\ (iso_status (new).(u_status) = not_isolated -> iso_status (snd x).(u_status) = not_isolated)
+  /\ (iso_status (snd x).(u_status) = isolated
+      -> iso_status new.(u_status) = isolated)
+  /\ (iso_status (new).(u_status) = not_isolated
+      -> iso_status (snd x).(u_status) = not_isolated)
   /\ (iso_status (snd x).(u_status) = not_isolated ->
       (miscomp_status (u_status new) = miscomparing ->
        hw_hlth (reading (fst x)) = good
@@ -113,17 +111,6 @@ Definition build_single_u_data_prop
          hw_hlth (reading (fst x)) = good ->
          miscomp_status (u_status new) = maybe_miscomparing
         )).
-
-
-
-
-
-
-
-
-
-
-
 
   
 Definition incr_risky_count_and_update_iso_status_bad_case
@@ -220,7 +207,8 @@ Defined.
 
 
 
-Definition incr_risky_count_and_update_iso_status_miscomp_case {x : unit_output * unit_data} 
+Definition incr_risky_count_and_update_iso_status_miscomp_case
+  {x : unit_output * unit_data} 
   (pf_sd : (snd x).(u_status).(iso_status) = not_isolated)
   {dev_lst : list unit_id}
   ( pf_good : (fst x).(reading).(hw_hlth) = good)
